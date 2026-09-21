@@ -9,6 +9,8 @@ public struct VODDetailView: View {
     @State private var currentSeries: Series?
     @State private var selectedSeason: Int = 1
     @State private var isLoadingEpisodes: Bool = false
+    @State private var isPresentingFullscreenPlayer: Bool = false
+    @ObservedObject var playback = PlaybackManager.shared
 
     public init(item: VODItem, series: Series? = nil, onPlay: @escaping (VODItem, Bool) -> Void) {
         self.item = item
@@ -16,6 +18,13 @@ public struct VODDetailView: View {
         self.onPlay = onPlay
         self._currentSeries = State(initialValue: series)
         self._selectedSeason = State(initialValue: series?.seasons.first?.seasonNumber ?? 1)
+    }
+
+    private func playAndPresent(item: VODItem, startFromBeginning: Bool) {
+        guard item.isPlayable else { return }
+        playback.playVOD(item: item, startFromBeginning: startFromBeginning)
+        onPlay(item, startFromBeginning)
+        isPresentingFullscreenPlayer = true
     }
 
     private var activePlayableItem: VODItem {
@@ -69,16 +78,24 @@ public struct VODDetailView: View {
             }
             .task {
                 if let s = currentSeries {
-                    if s.seasons.isEmpty || !s.seasons.contains(where: { !$0.episodes.isEmpty }) {
+                    let needsFetch = s.seasons.isEmpty ||
+                        !s.seasons.contains(where: { !$0.episodes.isEmpty }) ||
+                        s.seasons.contains(where: { season in
+                            season.episodes.contains(where: { !$0.isPlayable || $0.streamURL.absoluteString.hasSuffix("/0.mp4") })
+                        })
+                    if needsFetch {
                         isLoadingEpisodes = true
-                        let loaded = await VODStore.shared.fetchSeriesEpisodes(for: s)
+                        let loaded = await VODStore.shared.fetchSeriesEpisodes(for: s, forceRefresh: true)
                         self.currentSeries = loaded
-                        if let firstSeason = loaded.seasons.first {
+                        if let firstSeason = loaded.seasons.first(where: { !$0.episodes.isEmpty }) ?? loaded.seasons.first {
                             self.selectedSeason = firstSeason.seasonNumber
                         }
                         isLoadingEpisodes = false
                     }
                 }
+            }
+            .fullScreenCover(isPresented: $isPresentingFullscreenPlayer) {
+                FullscreenPlayerView()
             }
         }
     }
@@ -177,9 +194,7 @@ public struct VODDetailView: View {
         VStack(spacing: 12) {
             if activePlayableItem.lastPosition > 10 && activePlayableItem.isPlayable {
                 Button(action: {
-                    guard activePlayableItem.isPlayable else { return }
-                    onPlay(activePlayableItem, false)
-                    dismiss()
+                    playAndPresent(item: activePlayableItem, startFromBeginning: false)
                 }) {
                     HStack(spacing: 10) {
                         Image(systemName: "play.fill")
@@ -190,9 +205,7 @@ public struct VODDetailView: View {
                 .buttonStyle(LiquidGlassButtonStyle(isPrimary: true, minHeight: 54))
 
                 Button(action: {
-                    guard activePlayableItem.isPlayable else { return }
-                    onPlay(activePlayableItem, true)
-                    dismiss()
+                    playAndPresent(item: activePlayableItem, startFromBeginning: true)
                 }) {
                     HStack(spacing: 8) {
                         Image(systemName: "arrow.counterclockwise")
@@ -203,9 +216,7 @@ public struct VODDetailView: View {
                 .buttonStyle(LiquidGlassButtonStyle(isPrimary: false, minHeight: 48))
             } else {
                 Button(action: {
-                    guard activePlayableItem.isPlayable else { return }
-                    onPlay(activePlayableItem, true)
-                    dismiss()
+                    playAndPresent(item: activePlayableItem, startFromBeginning: true)
                 }) {
                     HStack(spacing: 10) {
                         if isLoadingEpisodes {
@@ -364,8 +375,7 @@ public struct VODDetailView: View {
     // MARK: - Single Episode Glass Row
     private func episodeRow(_ ep: VODItem) -> some View {
         Button(action: {
-            onPlay(ep, false)
-            dismiss()
+            playAndPresent(item: ep, startFromBeginning: false)
         }) {
             HStack(spacing: 14) {
                 // Episode Thumbnail with Glass Duration Badge

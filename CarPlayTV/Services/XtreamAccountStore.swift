@@ -30,13 +30,38 @@ public final class XtreamAccountStore: ObservableObject {
         loadAccountsFromDisk()
         if let active = activeAccount {
             let loadedChannels = loadAccountChannels(accountId: active.id)
-            let loadedVOD = loadAccountVOD(accountId: active.id)
-            let loadedSeries = loadAccountSeries(accountId: active.id)
+            var loadedVOD = loadAccountVOD(accountId: active.id)
+            var loadedSeries = loadAccountSeries(accountId: active.id)
+
+            sanitizeCachedContent(vod: &loadedVOD, series: &loadedSeries)
+
             if !loadedChannels.isEmpty {
                 PlaylistStore.shared.setChannels(loadedChannels)
             }
             if !loadedVOD.isEmpty || !loadedSeries.isEmpty {
                 VODStore.shared.setLibrary(movies: loadedVOD, series: loadedSeries)
+            }
+        }
+    }
+
+    private func sanitizeCachedContent(vod: inout [VODItem], series: inout [Series]) {
+        let hasBrokenVOD = vod.contains(where: { $0.streamURL.absoluteString.hasSuffix("/0.mp4") || $0.streamURL.absoluteString.hasSuffix("/0.") })
+        if hasBrokenVOD {
+            SanitizedLogger.info("XtreamAccountStore: Corrupted 0.mp4 streams found in cache. Cleaning VOD cache.")
+            vod.removeAll(where: { $0.streamURL.absoluteString.hasSuffix("/0.mp4") || $0.streamURL.absoluteString.hasSuffix("/0.") })
+        }
+
+        let hasStaleSeries = series.contains(where: { s in
+            s.seasons.contains(where: { season in
+                season.episodes.contains(where: { $0.streamURL.absoluteString.contains("/series/") && ($0.streamURL.lastPathComponent.hasPrefix("0.") || $0.streamURL.lastPathComponent.hasPrefix("1.")) })
+            })
+        })
+        if hasStaleSeries {
+            SanitizedLogger.info("XtreamAccountStore: Stale series seasons detected. Resetting seasons so fresh streams are fetched.")
+            series = series.map { s in
+                var fresh = s
+                fresh.seasons = []
+                return fresh
             }
         }
     }
@@ -299,8 +324,10 @@ public final class XtreamAccountStore: ObservableObject {
 
         // Load cached channels, VOD & series for the activated account
         let loadedChannels = loadAccountChannels(accountId: account.id)
-        let loadedVOD = loadAccountVOD(accountId: account.id)
-        let loadedSeries = loadAccountSeries(accountId: account.id)
+        var loadedVOD = loadAccountVOD(accountId: account.id)
+        var loadedSeries = loadAccountSeries(accountId: account.id)
+
+        sanitizeCachedContent(vod: &loadedVOD, series: &loadedSeries)
 
         PlaylistStore.shared.setChannels(loadedChannels)
         VODStore.shared.setLibrary(movies: loadedVOD, series: loadedSeries)

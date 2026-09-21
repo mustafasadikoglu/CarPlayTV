@@ -46,7 +46,7 @@ public struct VODHomeView: View {
 
     public var body: some View {
         NavigationStack {
-            ZStack {
+            ZStack(alignment: .bottom) {
                 LiquidGlassBackground()
 
                 ScrollView {
@@ -75,7 +75,7 @@ public struct VODHomeView: View {
                                             selectedTab == 0 ? Color.white.opacity(0.4) : Color.white.opacity(0.15),
                                             lineWidth: 1
                                         )
-                                )
+                                 )
                                 .foregroundColor(.white)
                             }
 
@@ -212,14 +212,25 @@ public struct VODHomeView: View {
                         }
                     }
                     .padding(.vertical, 10)
+                    .padding(.bottom, playback.currentVODItem != nil || playback.currentChannel != nil ? 72 : 10)
+                }
+
+                // Bottom Mini Player Bar
+                if let currentVOD = playback.currentVODItem {
+                    VODMiniPlayerBar(vod: currentVOD) {
+                        isPresentingFullscreenPlayer = true
+                    }
+                } else if let currentChannel = playback.currentChannel {
+                    MiniPlayerBar(channel: currentChannel) {
+                        isPresentingFullscreenPlayer = true
+                    }
                 }
             }
             .navigationTitle("Filmler & Diziler")
             .searchable(text: $searchText, prompt: "Film, dizi veya tür ara...")
             .sheet(item: $selectedItemForDetail) { item in
-                VODDetailView(item: item, series: selectedSeriesForDetail) { playable, startFromBeginning in
-                    playback.playVOD(item: playable, startFromBeginning: startFromBeginning)
-                    isPresentingFullscreenPlayer = true
+                VODDetailView(item: item, series: selectedSeriesForDetail) { _, _ in
+                    // Playback initiated and displayed in VODDetailView
                 }
             }
             .fullScreenCover(isPresented: $isPresentingFullscreenPlayer) {
@@ -251,5 +262,78 @@ public struct VODHomeView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, minHeight: 220)
+    }
+}
+
+public struct VODMiniPlayerBar: View {
+    let vod: VODItem
+    @ObservedObject var playback = PlaybackManager.shared
+    let onTap: () -> Void
+
+    public var body: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                CachedAsyncImage(url: vod.posterURL ?? vod.backdropURL, targetSize: CGSize(width: 80, height: 80)) { image in
+                    image
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 44, height: 44)
+                        .cornerRadius(8)
+                        .clipped()
+                } placeholder: {
+                    Image(systemName: "film.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(.white.opacity(0.85))
+                }
+            }
+            .frame(width: 44, height: 44)
+            .background(Color.white.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(vod.title)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+
+                HStack(spacing: 6) {
+                    Text(vod.type == .movie ? "Film" : "Dizi")
+                        .font(.caption2.bold())
+                        .foregroundColor(.accentColor)
+
+                    if vod.duration > 0 {
+                        Text("• \(vod.formattedDuration)")
+                            .font(.caption2)
+                            .foregroundColor(.white.opacity(0.75))
+                    }
+                }
+            }
+
+            Spacer()
+
+            // Large 48x48pt Play / Pause button
+            Button(action: {
+                playback.togglePlayPause()
+            }) {
+                Image(systemName: playback.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: 48, height: 48)
+                    .background(Color.accentColor)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle().stroke(Color.white.opacity(0.4), lineWidth: 1.2)
+                    )
+                    .shadow(color: Color.accentColor.opacity(0.4), radius: 8, x: 0, y: 3)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .liquidGlass(cornerRadius: 18)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+        .onTapGesture {
+            onTap()
+        }
     }
 }

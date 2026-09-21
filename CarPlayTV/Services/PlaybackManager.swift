@@ -195,18 +195,21 @@ public final class PlaybackManager: ObservableObject {
 
     /// Derives alternate container format URL (.mp4 <-> .mkv <-> .m3u8)
     public func alternateFormatURL(for url: URL) -> URL? {
-        let urlStr = url.absoluteString
-        if urlStr.hasSuffix(".mp4") {
-            let base = String(urlStr.dropLast(4))
-            return URL(string: base + ".mkv") ?? URL(string: base + ".m3u8")
-        } else if urlStr.hasSuffix(".mkv") {
-            let base = String(urlStr.dropLast(4))
-            return URL(string: base + ".mp4") ?? URL(string: base + ".m3u8")
-        } else if urlStr.hasSuffix(".m3u8") {
-            let base = String(urlStr.dropLast(5))
-            return URL(string: base + ".mp4")
+        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        guard var path = components?.path, !path.isEmpty else { return nil }
+
+        let lower = path.lowercased()
+        if lower.hasSuffix(".mp4") {
+            path = String(path.dropLast(4)) + ".mkv"
+        } else if lower.hasSuffix(".mkv") {
+            path = String(path.dropLast(4)) + ".mp4"
+        } else if lower.hasSuffix(".m3u8") {
+            path = String(path.dropLast(5)) + ".mp4"
+        } else {
+            return nil
         }
-        return nil
+        components?.path = path
+        return components?.url
     }
 
     private func startBufferingWatchdog(token: UUID) {
@@ -242,14 +245,24 @@ public final class PlaybackManager: ObservableObject {
         let token = UUID()
         self.currentPlaybackToken = token
 
+        self.hasRetriedWithAlternateFormat = false
         self.isLiveStream = false
         self.currentVODItem = item
         self.currentChannel = nil
         self.currentTime = startFromBeginning ? 0 : item.lastPosition
         self.duration = item.duration
-        self.isBuffering = true
         self.playbackError = nil
         self.pendingSeekTime = (!startFromBeginning && item.lastPosition > 5) ? item.lastPosition : nil
+
+        guard item.isPlayable else {
+            SanitizedLogger.error("VOD stream URL is not playable: \(item.streamURL)")
+            self.playbackError = "Geçersiz veya eksik video URL'si"
+            self.isBuffering = false
+            self.isPlaying = false
+            return
+        }
+
+        self.isBuffering = true
 
         let userAgent = Self.defaultUserAgent
         let headers: [String: String] = [
