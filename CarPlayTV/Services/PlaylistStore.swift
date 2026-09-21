@@ -66,7 +66,8 @@ public final class PlaylistStore: ObservableObject {
         }
 
         do {
-            var playlist = Playlist(name: name, type: .m3u, url: url, channelCount: 0)
+            let playlist = Playlist(name: name, type: .m3u, url: url, channelCount: 0)
+            let playlistId = playlist.id
 
             await MainActor.run {
                 self.playlists.append(playlist)
@@ -82,7 +83,7 @@ public final class PlaylistStore: ObservableObject {
             }
 
             await MainActor.run {
-                if let idx = self.playlists.firstIndex(where: { $0.id == playlist.id }) {
+                if let idx = self.playlists.firstIndex(where: { $0.id == playlistId }) {
                     self.playlists[idx].channelCount = totalCount
                 }
                 self.saveChannelsAsync()

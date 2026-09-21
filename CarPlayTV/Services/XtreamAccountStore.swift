@@ -46,7 +46,7 @@ public final class XtreamAccountStore: ObservableObject {
             let auth = try await XtreamCodesClient.shared.authenticate(server: server, username: user, password: pass)
 
             let expDateString: String?
-            if let expTs = auth.userInfo.expDate.flatMap({ Double($0) }), expTs > 0 {
+            if let expTs = auth.userInfo?.expDate.flatMap({ Double($0) }), expTs > 0 {
                 let date = Date(timeIntervalSince1970: expTs)
                 let df = DateFormatter()
                 df.dateStyle = .medium
@@ -72,9 +72,9 @@ public final class XtreamAccountStore: ObservableObject {
                 channelCount: liveStreams.count,
                 vodCount: vodStreams.count,
                 seriesCount: 0,
-                status: auth.userInfo.status ?? "Active",
+                status: auth.userInfo?.status ?? "Active",
                 expirationDate: expDateString,
-                maxConnections: auth.userInfo.maxConnections,
+                maxConnections: auth.userInfo?.maxCons,
                 lastSynced: Date()
             )
 
@@ -124,7 +124,7 @@ public final class XtreamAccountStore: ObservableObject {
             let auth = try await XtreamCodesClient.shared.authenticate(server: server, username: user, password: pass)
 
             let expDateString: String?
-            if let expTs = auth.userInfo.expDate.flatMap({ Double($0) }), expTs > 0 {
+            if let expTs = auth.userInfo?.expDate.flatMap({ Double($0) }), expTs > 0 {
                 let date = Date(timeIntervalSince1970: expTs)
                 let df = DateFormatter()
                 df.dateStyle = .medium
@@ -137,9 +137,9 @@ public final class XtreamAccountStore: ObservableObject {
                 self.accounts[index].name = name
                 self.accounts[index].server = server
                 self.accounts[index].username = user
-                self.accounts[index].status = auth.userInfo.status ?? "Active"
+                self.accounts[index].status = auth.userInfo?.status ?? "Active"
                 self.accounts[index].expirationDate = expDateString
-                self.accounts[index].maxConnections = auth.userInfo.maxConnections
+                self.accounts[index].maxConnections = auth.userInfo?.maxCons
                 self.accounts[index].securePassword = pass
 
                 if self.activeAccount?.id == id {
@@ -196,7 +196,7 @@ public final class XtreamAccountStore: ObservableObject {
             )) ?? []
 
             let expDateString: String?
-            if let expTs = auth.userInfo.expDate.flatMap({ Double($0) }), expTs > 0 {
+            if let expTs = auth.userInfo?.expDate.flatMap({ Double($0) }), expTs > 0 {
                 let date = Date(timeIntervalSince1970: expTs)
                 let df = DateFormatter()
                 df.dateStyle = .medium
@@ -213,7 +213,8 @@ public final class XtreamAccountStore: ObservableObject {
                     self.accounts[idx].channelCount = liveStreams.count
                     self.accounts[idx].vodCount = vodStreams.count
                     self.accounts[idx].expirationDate = expDateString
-                    self.accounts[idx].status = auth.userInfo.status ?? "Active"
+                    self.accounts[idx].status = auth.userInfo?.status ?? "Active"
+                    self.accounts[idx].maxConnections = auth.userInfo?.maxCons
                     self.accounts[idx].lastSynced = Date()
 
                     if self.activeAccount?.id == account.id {
@@ -269,7 +270,7 @@ public final class XtreamAccountStore: ObservableObject {
     /// Deletes an Xtream account, purges Keychain credentials and account cache.
     public func deleteAccount(account: XtreamAccount) {
         // 1. Wipe Keychain credential
-        account.securePassword = nil
+        KeychainHelper.shared.delete(key: "xtream_acc_pass_\(account.id)")
 
         // 2. Delete local cache files
         deleteAccountCache(accountId: account.id)
