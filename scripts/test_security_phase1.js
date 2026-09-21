@@ -145,11 +145,12 @@ if (!infoPlistContent.includes("<key>NSAllowsArbitraryLoads</key>\n\t\t<true/>")
 }
 console.log("- NSAllowsArbitraryLoads is true (HTTP & HTTPS allowed for IPTV providers).");
 
-if (!infoPlistContent.includes("<key>NSAllowsArbitraryLoadsForMedia</key>\n\t\t<true/>") &&
-    !infoPlistContent.includes("<key>NSAllowsArbitraryLoadsForMedia</key>\r\n\t\t<true/>")) {
-    throw new Error("Info.plist: NSAllowsArbitraryLoadsForMedia must be true for IPTV video playback!");
+// Note: NSAllowsArbitraryLoadsForMedia must NOT be present, because if set to true,
+// Apple ATS forces HTTPS on all URLSession data tasks (Xtream player_api.php, M3U, EPG)!
+if (infoPlistContent.includes("<key>NSAllowsArbitraryLoadsForMedia</key>")) {
+    throw new Error("Info.plist: NSAllowsArbitraryLoadsForMedia must NOT be present as it disables HTTP for URLSession API data requests!");
 }
-console.log("- NSAllowsArbitraryLoadsForMedia is true (AVPlayer HTTP stream playback allowed).");
+console.log("- Clean NSAllowsArbitraryLoads verified (covers all URLSession data and AVPlayer media requests).");
 
 if (!infoPlistContent.includes("<key>NSAllowsLocalNetworking</key>\n\t\t<true/>") &&
     !infoPlistContent.includes("<key>NSAllowsLocalNetworking</key>\r\n\t\t<true/>")) {

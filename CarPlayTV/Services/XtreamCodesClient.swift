@@ -3,6 +3,16 @@ import Foundation
 public final class XtreamCodesClient {
     public static let shared = XtreamCodesClient()
 
+    private let session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 25.0
+        config.timeoutIntervalForResource = 60.0
+        config.httpAdditionalHeaders = [
+            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+        ]
+        return URLSession(configuration: config)
+    }()
+
     private init() {}
 
     private func cleanServerURL(_ server: String) -> String {
@@ -14,6 +24,10 @@ public final class XtreamCodesClient {
             clean = String(clean.dropLast())
         }
         return clean
+    }
+
+    private func encoded(_ string: String) -> String {
+        return string.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? string
     }
 
     // MARK: - Secure Keychain Storage
@@ -39,14 +53,16 @@ public final class XtreamCodesClient {
 
     public func authenticate(server: String, username: String, password: String) async throws -> XtreamAuthResponse {
         let cleanBase = cleanServerURL(server)
-        let urlString = "\(cleanBase)/player_api.php?username=\(username)&password=\(password)"
+        let encUser = encoded(username)
+        let encPass = encoded(password)
+        let urlString = "\(cleanBase)/player_api.php?username=\(encUser)&password=\(encPass)"
         guard let url = URL(string: urlString) else {
             SanitizedLogger.error("Geçersiz Xtream sunucu URL'si: \(urlString)")
             throw URLError(.badURL)
         }
 
         SanitizedLogger.info("Xtream sunucusuna bağlanılıyor: \(urlString)")
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await session.data(from: url)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             SanitizedLogger.error("Xtream sunucu hatası: \((response as? HTTPURLResponse)?.statusCode ?? -1)")
             throw URLError(.badServerResponse)
@@ -62,11 +78,13 @@ public final class XtreamCodesClient {
 
     public func fetchLiveCategories(server: String, username: String, password: String) async throws -> [XtreamCategory] {
         let cleanBase = cleanServerURL(server)
-        guard let url = URL(string: "\(cleanBase)/player_api.php?username=\(username)&password=\(password)&action=get_live_categories") else {
+        let encUser = encoded(username)
+        let encPass = encoded(password)
+        guard let url = URL(string: "\(cleanBase)/player_api.php?username=\(encUser)&password=\(encPass)&action=get_live_categories") else {
             throw URLError(.badURL)
         }
 
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await session.data(from: url)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             throw URLError(.badServerResponse)
         }
@@ -77,7 +95,9 @@ public final class XtreamCodesClient {
 
     public func fetchLiveStreams(server: String, username: String, password: String, categoryId: String? = nil) async throws -> [Channel] {
         let cleanBase = cleanServerURL(server)
-        var urlString = "\(cleanBase)/player_api.php?username=\(username)&password=\(password)&action=get_live_streams"
+        let encUser = encoded(username)
+        let encPass = encoded(password)
+        var urlString = "\(cleanBase)/player_api.php?username=\(encUser)&password=\(encPass)&action=get_live_streams"
         if let catId = categoryId {
             urlString += "&category_id=\(catId)"
         }
@@ -86,7 +106,7 @@ public final class XtreamCodesClient {
             throw URLError(.badURL)
         }
 
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await session.data(from: url)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             throw URLError(.badServerResponse)
         }
@@ -117,11 +137,13 @@ public final class XtreamCodesClient {
     // MARK: - VOD (Movies) Methods
     public func fetchVodCategories(server: String, username: String, password: String) async throws -> [XtreamCategory] {
         let cleanBase = cleanServerURL(server)
-        guard let url = URL(string: "\(cleanBase)/player_api.php?username=\(username)&password=\(password)&action=get_vod_categories") else {
+        let encUser = encoded(username)
+        let encPass = encoded(password)
+        guard let url = URL(string: "\(cleanBase)/player_api.php?username=\(encUser)&password=\(encPass)&action=get_vod_categories") else {
             throw URLError(.badURL)
         }
 
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await session.data(from: url)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             throw URLError(.badServerResponse)
         }
@@ -131,7 +153,9 @@ public final class XtreamCodesClient {
 
     public func fetchVodStreams(server: String, username: String, password: String, categoryId: String? = nil) async throws -> [VODItem] {
         let cleanBase = cleanServerURL(server)
-        var urlString = "\(cleanBase)/player_api.php?username=\(username)&password=\(password)&action=get_vod_streams"
+        let encUser = encoded(username)
+        let encPass = encoded(password)
+        var urlString = "\(cleanBase)/player_api.php?username=\(encUser)&password=\(encPass)&action=get_vod_streams"
         if let catId = categoryId {
             urlString += "&category_id=\(catId)"
         }
@@ -140,7 +164,7 @@ public final class XtreamCodesClient {
             throw URLError(.badURL)
         }
 
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await session.data(from: url)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             throw URLError(.badServerResponse)
         }
@@ -171,11 +195,13 @@ public final class XtreamCodesClient {
     // MARK: - Series Methods
     public func fetchSeriesCategories(server: String, username: String, password: String) async throws -> [XtreamCategory] {
         let cleanBase = cleanServerURL(server)
-        guard let url = URL(string: "\(cleanBase)/player_api.php?username=\(username)&password=\(password)&action=get_series_categories") else {
+        let encUser = encoded(username)
+        let encPass = encoded(password)
+        guard let url = URL(string: "\(cleanBase)/player_api.php?username=\(encUser)&password=\(encPass)&action=get_series_categories") else {
             throw URLError(.badURL)
         }
 
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await session.data(from: url)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             throw URLError(.badServerResponse)
         }
@@ -185,7 +211,9 @@ public final class XtreamCodesClient {
 
     public func fetchSeries(server: String, username: String, password: String, categoryId: String? = nil) async throws -> [Series] {
         let cleanBase = cleanServerURL(server)
-        var urlString = "\(cleanBase)/player_api.php?username=\(username)&password=\(password)&action=get_series"
+        let encUser = encoded(username)
+        let encPass = encoded(password)
+        var urlString = "\(cleanBase)/player_api.php?username=\(encUser)&password=\(encPass)&action=get_series"
         if let catId = categoryId {
             urlString += "&category_id=\(catId)"
         }
@@ -194,7 +222,7 @@ public final class XtreamCodesClient {
             throw URLError(.badURL)
         }
 
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await session.data(from: url)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             throw URLError(.badServerResponse)
         }
@@ -219,4 +247,3 @@ public final class XtreamCodesClient {
         }
     }
 }
-
