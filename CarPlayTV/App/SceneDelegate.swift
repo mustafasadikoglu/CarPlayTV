@@ -1,6 +1,7 @@
 import UIKit
 import SwiftUI
 
+@objc(SceneDelegate)
 public class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     public var window: UIWindow?
 

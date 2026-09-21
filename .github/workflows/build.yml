@@ -76,7 +76,11 @@ jobs:
           echo "Found app at: $APP_PATH"
           echo "=== VERIFYING & INJECTING ATS IN INFOPLIST ==="
           plutil -replace NSAppTransportSecurity -xml "<dict><key>NSAllowsArbitraryLoads</key><true/></dict>" "$APP_PATH/Info.plist" || cp CarPlayTV/Info.plist "$APP_PATH/Info.plist"
-          plutil -p "$APP_PATH/Info.plist" | grep -A 4 "NSAppTransportSecurity" || true
+          echo "=== SIGNING & EMBEDDING CARPLAY ENTITLEMENTS (TROLLSTORE / CARPLAY SUPPORT) ==="
+          codesign --force --deep --sign - --entitlements CarPlayTV/CarPlayTV.entitlements "$APP_PATH" || true
+          echo "=== VERIFYING EMBEDDED ENTITLEMENTS ==="
+          codesign -d --entitlements :- "$APP_PATH" || true
+          cp CarPlayTV/CarPlayTV.entitlements "$APP_PATH/arch_entitlements" || true
           cp -r "$APP_PATH" build/Payload/
           cd build
           zip -r CarPlayTV.ipa Payload

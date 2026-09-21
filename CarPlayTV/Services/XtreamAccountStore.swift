@@ -71,19 +71,21 @@ public final class XtreamAccountStore: ObservableObject {
             let liveStreams = try await XtreamCodesClient.shared.fetchLiveStreams(server: server, username: user, password: pass)
 
             await MainActor.run { self.syncProgressText = "VOD film listesi çekiliyor..." }
-            var vodStreams: [VODItem] = []
+            let vodStreams: [VODItem]
             do {
                 vodStreams = try await XtreamCodesClient.shared.fetchVodStreams(server: server, username: user, password: pass)
             } catch {
                 SanitizedLogger.warning("VOD filmleri çekilemedi: \(error.localizedDescription)")
+                vodStreams = []
             }
 
             await MainActor.run { self.syncProgressText = "Dizi listesi çekiliyor..." }
-            var seriesStreams: [Series] = []
+            let seriesStreams: [Series]
             do {
                 seriesStreams = try await XtreamCodesClient.shared.fetchSeries(server: server, username: user, password: pass)
             } catch {
                 SanitizedLogger.warning("Diziler çekilemedi: \(error.localizedDescription)")
+                seriesStreams = []
             }
 
             // 3. Create account model
@@ -214,7 +216,7 @@ public final class XtreamAccountStore: ObservableObject {
                 password: pass
             )
 
-            var vodStreams: [VODItem] = []
+            let vodStreams: [VODItem]
             do {
                 vodStreams = try await XtreamCodesClient.shared.fetchVodStreams(
                     server: account.server,
@@ -223,9 +225,10 @@ public final class XtreamAccountStore: ObservableObject {
                 )
             } catch {
                 SanitizedLogger.warning("VOD filmleri senkronize edilemedi: \(error.localizedDescription)")
+                vodStreams = []
             }
 
-            var seriesStreams: [Series] = []
+            let seriesStreams: [Series]
             do {
                 seriesStreams = try await XtreamCodesClient.shared.fetchSeries(
                     server: account.server,
@@ -234,6 +237,7 @@ public final class XtreamAccountStore: ObservableObject {
                 )
             } catch {
                 SanitizedLogger.warning("Diziler senkronize edilemedi: \(error.localizedDescription)")
+                seriesStreams = []
             }
 
             let expDateString: String?

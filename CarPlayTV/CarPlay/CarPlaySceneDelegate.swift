@@ -1,6 +1,7 @@
 import UIKit
 import CarPlay
 
+@objc(CarPlaySceneDelegate)
 public final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     public var interfaceController: CPInterfaceController?
 

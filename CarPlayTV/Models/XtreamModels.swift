@@ -269,6 +269,18 @@ public struct XtreamVodStream: Codable, Identifiable {
 
         self.containerExtension = try? container.decode(String.self, forKey: .containerExtension)
     }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(streamId, forKey: .streamId)
+        try container.encodeIfPresent(num, forKey: .num)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(streamType, forKey: .streamType)
+        try container.encodeIfPresent(streamIcon, forKey: .streamIcon)
+        try container.encodeIfPresent(rating, forKey: .rating)
+        try container.encodeIfPresent(categoryId, forKey: .categoryId)
+        try container.encodeIfPresent(containerExtension, forKey: .containerExtension)
+    }
 }
 
 public struct XtreamSeriesItem: Codable, Identifiable {
@@ -295,9 +307,13 @@ public struct XtreamSeriesItem: Codable, Identifiable {
         case director
         case genre
         case releaseDate = "releaseDate"
-        case releaseDateSnake = "release_date"
         case rating
         case categoryId = "category_id"
+    }
+
+    /// Additional keys used only during decoding (snake_case variants)
+    private enum AdditionalKeys: String, CodingKey {
+        case releaseDateSnake = "release_date"
     }
 
     public init(
@@ -328,6 +344,8 @@ public struct XtreamSeriesItem: Codable, Identifiable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        let altContainer = try decoder.container(keyedBy: AdditionalKeys.self)
+
         if let sId = try? container.decode(Int.self, forKey: .seriesId) {
             self.seriesId = sId
         } else if let sStr = try? container.decode(String.self, forKey: .seriesId), let sInt = Int(sStr) {
@@ -354,7 +372,7 @@ public struct XtreamSeriesItem: Codable, Identifiable {
         if let rd = try? container.decode(String.self, forKey: .releaseDate) {
             self.releaseDate = rd
         } else {
-            self.releaseDate = try? container.decode(String.self, forKey: .releaseDateSnake)
+            self.releaseDate = try? altContainer.decode(String.self, forKey: .releaseDateSnake)
         }
 
         if let rStr = try? container.decode(String.self, forKey: .rating) {
@@ -375,4 +393,20 @@ public struct XtreamSeriesItem: Codable, Identifiable {
             self.categoryId = nil
         }
     }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(seriesId, forKey: .seriesId)
+        try container.encodeIfPresent(num, forKey: .num)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(cover, forKey: .cover)
+        try container.encodeIfPresent(plot, forKey: .plot)
+        try container.encodeIfPresent(cast, forKey: .cast)
+        try container.encodeIfPresent(director, forKey: .director)
+        try container.encodeIfPresent(genre, forKey: .genre)
+        try container.encodeIfPresent(releaseDate, forKey: .releaseDate)
+        try container.encodeIfPresent(rating, forKey: .rating)
+        try container.encodeIfPresent(categoryId, forKey: .categoryId)
+    }
 }
+
