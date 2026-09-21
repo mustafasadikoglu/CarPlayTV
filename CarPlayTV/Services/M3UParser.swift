@@ -68,15 +68,92 @@ public final class M3UParser {
     }
 
     public func fetchAndParse(from url: URL) async throws -> [Channel] {
-        let (data, response) = try await URLSession.shared.data(from: url)
+        var allChannels: [Channel] = []
+        _ = try await fetchAndParseStreaming(from: url, chunkSize: 500) { chunk in
+            allChannels.append(contentsOf: chunk)
+        }
+        return allChannels
+    }
+
+    /// Memory-efficient streaming parser for large playlists (10,000+ channels)
+    public func fetchAndParseStreaming(
+        from url: URL,
+        chunkSize: Int = 500,
+        onChunk: @escaping ([Channel]) -> Void
+    ) async throws -> Int {
+        let (localURL, response) = try await URLSession.shared.download(from: url)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             throw URLError(.badServerResponse)
         }
-        guard let string = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .ascii) else {
-            throw URLError(.cannotDecodeContentData)
+
+        var totalCount = 0
+        var chunk: [Channel] = []
+
+        var currentTvgId: String?
+        var currentTvgName: String?
+        var currentTvgLogo: String?
+        var currentGroupTitle: String = "Genel"
+        var currentChannelName: String?
+        var currentUserAgent: String?
+
+        for try await rawLine in localURL.lines {
+            let line = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
+            if line.isEmpty { continue }
+
+            if line.hasPrefix("#EXTINF:") {
+                currentTvgId = extractAttribute(named: "tvg-id", from: line)
+                currentTvgName = extractAttribute(named: "tvg-name", from: line)
+                currentTvgLogo = extractAttribute(named: "tvg-logo", from: line)
+                currentGroupTitle = extractAttribute(named: "group-title", from: line) ?? "Genel"
+
+                if let commaIndex = line.lastIndex(of: ",") {
+                    let nameSubstring = line[line.index(after: commaIndex)...]
+                    currentChannelName = nameSubstring.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+            } else if line.hasPrefix("#EXTVLCOPT:http-user-agent=") {
+                currentUserAgent = String(line.dropFirst("#EXTVLCOPT:http-user-agent=".count))
+            } else if !line.hasPrefix("#") {
+                if let streamURL = URL(string: line) {
+                    let channelName = currentChannelName ?? currentTvgName ?? "Kanal \(totalCount + 1)"
+                    let logoURL = currentTvgLogo.flatMap { URL(string: $0) }
+
+                    let channel = Channel(
+                        id: UUID().uuidString,
+                        name: channelName,
+                        streamURL: streamURL,
+                        logoURL: logoURL,
+                        groupTitle: currentGroupTitle,
+                        tvgId: currentTvgId,
+                        tvgName: currentTvgName,
+                        isFavorite: false,
+                        httpUserAgent: currentUserAgent
+                    )
+                    chunk.append(channel)
+                    totalCount += 1
+
+                    if chunk.count >= chunkSize {
+                        onChunk(chunk)
+                        chunk.removeAll(keepingCapacity: true)
+                    }
+                }
+
+                currentTvgId = nil
+                currentTvgName = nil
+                currentTvgLogo = nil
+                currentGroupTitle = "Genel"
+                currentChannelName = nil
+                currentUserAgent = nil
+            }
         }
-        return parse(content: string)
+
+        if !chunk.isEmpty {
+            onChunk(chunk)
+        }
+
+        try? FileManager.default.removeItem(at: localURL)
+        return totalCount
     }
+
 
     private func extractAttribute(named name: String, from line: String) -> String? {
         let pattern = "\(name)=\"([^\"]*)\""

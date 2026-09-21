@@ -10,13 +10,32 @@ public final class PlaylistStore: ObservableObject {
     @Published public var recentChannels: [Channel] = []
     @Published public var categories: [ChannelCategory] = []
     @Published public var isLoading: Bool = false
+    @Published public var parseProgressText: String?
     @Published public var errorMessage: String?
 
-    private let userDefaults = UserDefaults.standard
-    private let channelsKey = "carplaytv_channels_cache"
-    private let playlistsKey = "carplaytv_playlists_cache"
-    private let favoritesKey = "carplaytv_favorites_ids"
+    // In-memory O(1) category dictionary index
+    private var categoryMap: [String: [Channel]] = [:]
+
+    private let fileManager = FileManager.default
     private let recentsKey = "carplaytv_recents_cache"
+    private let userDefaults = UserDefaults.standard
+
+    private var storageDirectory: URL {
+        let paths = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)
+        let dir = paths[0].appendingPathComponent("CarPlayTV", isDirectory: true)
+        if !fileManager.fileExists(atPath: dir.path) {
+            try? fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
+        }
+        return dir
+    }
+
+    private var channelsFileURL: URL {
+        storageDirectory.appendingPathComponent("channels_store.json")
+    }
+
+    private var playlistsFileURL: URL {
+        storageDirectory.appendingPathComponent("playlists_store.json")
+    }
 
     public init() {
         loadFromStorage()
@@ -29,29 +48,46 @@ public final class PlaylistStore: ObservableObject {
         let samples = M3UParser.sampleChannels()
         self.channels = samples
         updateDerivedData()
-        saveChannels()
+        saveChannelsAsync()
     }
 
+    // MARK: - Streaming Chunked M3U Download
     public func addM3UPlaylist(name: String, url: URL) async {
         await MainActor.run {
             self.isLoading = true
             self.errorMessage = nil
+            self.parseProgressText = "Bağlanıyor..."
         }
 
         do {
-            let fetched = try await M3UParser.shared.fetchAndParse(from: url)
+            var playlist = Playlist(name: name, type: .m3u, url: url, channelCount: 0)
+
             await MainActor.run {
-                let playlist = Playlist(name: name, type: .m3u, url: url, channelCount: fetched.count)
                 self.playlists.append(playlist)
-                self.channels.append(contentsOf: fetched)
-                self.updateDerivedData()
-                self.saveChannels()
-                self.savePlaylists()
+            }
+
+            let totalCount = try await M3UParser.shared.fetchAndParseStreaming(from: url, chunkSize: 500) { [weak self] chunk in
+                DispatchQueue.main.async {
+                    guard let self = self else { return }
+                    self.channels.append(contentsOf: chunk)
+                    self.parseProgressText = "\(self.channels.count) kanal yüklendi..."
+                    self.updateDerivedData()
+                }
+            }
+
+            await MainActor.run {
+                if let idx = self.playlists.firstIndex(where: { $0.id == playlist.id }) {
+                    self.playlists[idx].channelCount = totalCount
+                }
+                self.saveChannelsAsync()
+                self.savePlaylistsAsync()
+                self.parseProgressText = nil
                 self.isLoading = false
             }
         } catch {
             await MainActor.run {
                 self.errorMessage = "M3U listesi yüklenemedi: \(error.localizedDescription)"
+                self.parseProgressText = nil
                 self.isLoading = false
             }
         }
@@ -61,6 +97,7 @@ public final class PlaylistStore: ObservableObject {
         await MainActor.run {
             self.isLoading = true
             self.errorMessage = nil
+            self.parseProgressText = "Xtream sunucusuna bağlanılıyor..."
         }
 
         do {
@@ -79,13 +116,15 @@ public final class PlaylistStore: ObservableObject {
                 self.playlists.append(playlist)
                 self.channels.append(contentsOf: fetched)
                 self.updateDerivedData()
-                self.saveChannels()
-                self.savePlaylists()
+                self.saveChannelsAsync()
+                self.savePlaylistsAsync()
+                self.parseProgressText = nil
                 self.isLoading = false
             }
         } catch {
             await MainActor.run {
                 self.errorMessage = "Xtream sunucusuna bağlanılamadı: \(error.localizedDescription)"
+                self.parseProgressText = nil
                 self.isLoading = false
             }
         }
@@ -95,7 +134,7 @@ public final class PlaylistStore: ObservableObject {
         if let index = channels.firstIndex(where: { $0.id == channelId }) {
             channels[index].isFavorite.toggle()
             updateDerivedData()
-            saveChannels()
+            saveChannelsAsync()
         }
     }
 
@@ -109,24 +148,47 @@ public final class PlaylistStore: ObservableObject {
         saveRecents()
     }
 
+    // Fast O(1) category lookup
     public func channels(for category: String) -> [Channel] {
         if category == "Tümü" {
             return channels
         }
-        return channels.filter { $0.groupTitle == category }
+        return categoryMap[category] ?? []
+    }
+
+    // High performance background debounced search with result capping
+    public func searchChannels(query: String, category: String = "Tümü", limit: Int = 100) async -> [Channel] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let source = channels(for: category)
+
+        guard !trimmed.isEmpty else {
+            return Array(source.prefix(limit))
+        }
+
+        return await Task.detached(priority: .userInitiated) {
+            var results: [Channel] = []
+            for ch in source {
+                if ch.name.lowercased().contains(trimmed) || ch.groupTitle.lowercased().contains(trimmed) {
+                    results.append(ch)
+                    if results.count >= limit { break }
+                }
+            }
+            return results
+        }.value
     }
 
     private func updateDerivedData() {
         favoriteChannels = channels.filter { $0.isFavorite }
 
-        // Compute categories
-        var groupDict: [String: Int] = [:]
+        // Build category map and counts in single pass
+        var groupDict: [String: [Channel]] = [:]
         for ch in channels {
-            groupDict[ch.groupTitle, default: 0] += 1
+            groupDict[ch.groupTitle, default: []].append(ch)
         }
+        self.categoryMap = groupDict
 
-        var cats = groupDict.map { key, count in
-            ChannelCategory(name: key, channelCount: count, iconName: iconForCategory(key))
+        var cats = groupDict.map { key, chs in
+            ChannelCategory(name: key, channelCount: chs.count, iconName: iconForCategory(key))
         }.sorted { $0.name < $1.name }
 
         cats.insert(ChannelCategory(name: "Tümü", channelCount: channels.count, iconName: "tv.fill"), at: 0)
@@ -144,16 +206,24 @@ public final class PlaylistStore: ObservableObject {
         return "tv"
     }
 
-    // MARK: - Persistence
-    private func saveChannels() {
-        if let data = try? JSONEncoder().encode(channels) {
-            userDefaults.set(data, forKey: channelsKey)
+    // MARK: - Disk-Backed Fast Persistence
+    private func saveChannelsAsync() {
+        let chs = self.channels
+        let file = self.channelsFileURL
+        DispatchQueue.global(qos: .utility).async {
+            if let data = try? JSONEncoder().encode(chs) {
+                try? data.write(to: file, options: [.atomic])
+            }
         }
     }
 
-    private func savePlaylists() {
-        if let data = try? JSONEncoder().encode(playlists) {
-            userDefaults.set(data, forKey: playlistsKey)
+    private func savePlaylistsAsync() {
+        let pls = self.playlists
+        let file = self.playlistsFileURL
+        DispatchQueue.global(qos: .utility).async {
+            if let data = try? JSONEncoder().encode(pls) {
+                try? data.write(to: file, options: [.atomic])
+            }
         }
     }
 
@@ -164,14 +234,17 @@ public final class PlaylistStore: ObservableObject {
     }
 
     private func loadFromStorage() {
-        if let data = userDefaults.data(forKey: channelsKey),
+        // Load channels from disk file
+        if let data = try? Data(contentsOf: channelsFileURL),
            let decoded = try? JSONDecoder().decode([Channel].self, from: data) {
             self.channels = decoded
         }
-        if let data = userDefaults.data(forKey: playlistsKey),
+        // Load playlists from disk file
+        if let data = try? Data(contentsOf: playlistsFileURL),
            let decoded = try? JSONDecoder().decode([Playlist].self, from: data) {
             self.playlists = decoded
         }
+        // Load recents
         if let data = userDefaults.data(forKey: recentsKey),
            let decoded = try? JSONDecoder().decode([Channel].self, from: data) {
             self.recentChannels = decoded

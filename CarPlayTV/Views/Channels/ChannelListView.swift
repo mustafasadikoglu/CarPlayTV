@@ -8,23 +8,37 @@ public struct ChannelListView: View {
     @State private var selectedCategory: String = "Tümü"
     @State private var onlyFavorites: Bool = false
     @State private var isPresentingFullscreenPlayer: Bool = false
+    @State private var searchResults: [Channel] = []
+    @State private var searchTask: Task<Void, Never>?
 
-    public var filteredChannels: [Channel] {
-        var list = onlyFavorites ? store.favoriteChannels : store.channels(for: selectedCategory)
-
-        if !searchText.trimmingCharacters(in: .whitespaces).isEmpty {
-            let query = searchText.lowercased()
-            list = list.filter {
-                $0.name.lowercased().contains(query) ||
-                $0.groupTitle.lowercased().contains(query)
-            }
+    public var displayedChannels: [Channel] {
+        if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return searchResults
         }
-        return list
+        if onlyFavorites {
+            return store.favoriteChannels
+        }
+        return store.channels(for: selectedCategory)
     }
 
     public var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                // Progressive Parsing Banner (For Large Playlists)
+                if let progress = store.parseProgressText {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                        Text(progress)
+                            .font(.caption.bold())
+                            .foregroundColor(.accentColor)
+                        Spacer()
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 6)
+                    .background(Color.accentColor.opacity(0.12))
+                }
+
                 // Category Pills
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
@@ -74,7 +88,7 @@ public struct ChannelListView: View {
                 }
 
                 // Channel List
-                if filteredChannels.isEmpty {
+                if displayedChannels.isEmpty {
                     VStack(spacing: 12) {
                         Spacer()
                         Image(systemName: "tv.slash")
@@ -92,7 +106,7 @@ public struct ChannelListView: View {
                     }
                 } else {
                     List {
-                        ForEach(filteredChannels) { channel in
+                        ForEach(displayedChannels) { channel in
                             ChannelRowView(
                                 channel: channel,
                                 isCurrent: playback.currentChannel?.id == channel.id,
@@ -118,6 +132,22 @@ public struct ChannelListView: View {
             }
             .navigationTitle("Canlı TV")
             .searchable(text: $searchText, prompt: "Kanal veya kategori ara...")
+            .onChange(of: searchText) { newQuery in
+                searchTask?.cancel()
+                searchTask = Task {
+                    try? await Task.sleep(nanoseconds: 250_000_000) // 250ms debounce
+                    if !Task.isCancelled {
+                        let results = await store.searchChannels(
+                            query: newQuery,
+                            category: onlyFavorites ? "Tümü" : selectedCategory,
+                            limit: 100
+                        )
+                        await MainActor.run {
+                            self.searchResults = results
+                        }
+                    }
+                }
+            }
             .fullScreenCover(isPresented: $isPresentingFullscreenPlayer) {
                 FullscreenPlayerView()
             }
