@@ -2,12 +2,34 @@ import SwiftUI
 
 public struct PlaylistManagerView: View {
     @ObservedObject var store = PlaylistStore.shared
+    @ObservedObject var accountStore = XtreamAccountStore.shared
     @State private var isShowingAddSheet: Bool = false
 
     public var body: some View {
         NavigationStack {
             List {
-                Section("Aktif Çalma Listeleri (\(store.playlists.count))") {
+                // Xtream Accounts Section
+                Section("Xtream IPTV Hesapları (\(accountStore.accounts.count))") {
+                    if accountStore.accounts.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Kayıtlı Xtream hesabı bulunmuyor")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            Text("Birden fazla Xtream hesabı ekleyip tek tıkla aralarında geçiş yapabilirsiniz.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.vertical, 4)
+                    } else {
+                        ForEach(accountStore.accounts) { acc in
+                            XtreamAccountRowView(account: acc)
+                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                                .listRowBackground(Color.clear)
+                        }
+                    }
+                }
+
+                Section("M3U Çalma Listeleri (\(store.playlists.count))") {
                     if store.playlists.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Özel liste eklenmedi")

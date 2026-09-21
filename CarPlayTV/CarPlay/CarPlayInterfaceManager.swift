@@ -150,6 +150,23 @@ public final class CarPlayInterfaceManager {
     }
 
     private func makeCategoriesTemplate() -> CPListTemplate {
+        var sections: [CPListSection] = []
+
+        // Xtream Account Profile Switcher Section
+        if !XtreamAccountStore.shared.accounts.isEmpty {
+            let activeName = XtreamAccountStore.shared.activeAccount?.name ?? "Seçilmedi"
+            let accountItem = CPListItem(
+                text: "Aktif Xtream Hesabı",
+                detailText: "\(activeName) (Değiştirmek için dokunun)"
+            )
+            accountItem.setImage(UIImage(systemName: "server.rack"))
+            accountItem.handler = { [weak self] _, completion in
+                self?.showAccountsTemplate()
+                completion()
+            }
+            sections.append(CPListSection(items: [accountItem], header: "Hesap & Profil", sectionIndexTitle: "H"))
+        }
+
         let items = PlaylistStore.shared.categories.map { cat -> CPListItem in
             let item = CPListItem(text: cat.name, detailText: "\(cat.channelCount) Kanal")
             item.setImage(UIImage(systemName: cat.iconName))
@@ -159,11 +176,40 @@ public final class CarPlayInterfaceManager {
             }
             return item
         }
-        let section = CPListSection(items: items)
-        let template = CPListTemplate(title: "Kategoriler", sections: [section])
+        sections.append(CPListSection(items: items, header: "Kategoriler", sectionIndexTitle: "K"))
+
+        let template = CPListTemplate(title: "Kategoriler", sections: sections)
         template.tabTitle = "Kategoriler"
         template.tabImage = UIImage(systemName: "square.grid.2x2.fill")
         return template
+    }
+
+    private func showAccountsTemplate() {
+        guard let controller = interfaceController else { return }
+        let accounts = XtreamAccountStore.shared.accounts
+
+        let items = accounts.map { acc -> CPListItem in
+            let isCurrent = acc.id == XtreamAccountStore.shared.activeAccount?.id
+            let item = CPListItem(
+                text: acc.name,
+                detailText: "\(acc.channelCount) Kanal • \(acc.hostDisplayName)"
+            )
+            if isCurrent {
+                item.setImage(UIImage(systemName: "checkmark.circle.fill"))
+            } else {
+                item.setImage(UIImage(systemName: "circle"))
+            }
+            item.handler = { [weak self] _, completion in
+                XtreamAccountStore.shared.setActiveAccount(account: acc)
+                controller.popTemplate(animated: true, completion: nil)
+                completion()
+            }
+            return item
+        }
+
+        let section = CPListSection(items: items)
+        let template = CPListTemplate(title: "Xtream Hesapları", sections: [section])
+        controller.pushTemplate(template, animated: true, completion: nil)
     }
 
     private func makeRecentsTemplate() -> CPListTemplate {

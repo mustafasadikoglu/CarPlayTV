@@ -3,6 +3,7 @@ import SwiftUI
 public struct AddPlaylistSheet: View {
     @Environment(\.dismiss) var dismiss
     @ObservedObject var store = PlaylistStore.shared
+    @ObservedObject var accountStore = XtreamAccountStore.shared
 
     @State private var selectedTab: Int = 0
 
@@ -65,10 +66,12 @@ public struct AddPlaylistSheet: View {
 
                     Section(footer: Text("Xtream Codes API canlı TV kanalları otomatik olarak kategorileriyle çekilecektir.")) {
                         Button(action: saveXtream) {
-                            if store.isLoading {
+                            if accountStore.isSyncing {
                                 HStack {
                                     Spacer()
                                     ProgressView()
+                                        .padding(.trailing, 8)
+                                    Text(accountStore.syncProgressText ?? "Bağlanılıyor...")
                                     Spacer()
                                 }
                             } else {
@@ -77,11 +80,11 @@ public struct AddPlaylistSheet: View {
                                     .bold()
                             }
                         }
-                        .disabled(xtreamName.isEmpty || xtreamServer.isEmpty || xtreamUser.isEmpty || xtreamPass.isEmpty || store.isLoading)
+                        .disabled(xtreamName.isEmpty || xtreamServer.isEmpty || xtreamUser.isEmpty || xtreamPass.isEmpty || accountStore.isSyncing)
                     }
                 }
 
-                if let error = store.errorMessage {
+                if let error = accountStore.errorMessage ?? store.errorMessage {
                     Section {
                         Text(error)
                             .foregroundColor(.red)
@@ -113,14 +116,18 @@ public struct AddPlaylistSheet: View {
 
     private func saveXtream() {
         Task {
-            await store.addXtreamPlaylist(
-                name: xtreamName,
-                server: xtreamServer,
-                user: xtreamUser,
-                pass: xtreamPass
-            )
-            if store.errorMessage == nil {
-                dismiss()
+            do {
+                _ = try await XtreamAccountStore.shared.addAccount(
+                    name: xtreamName,
+                    server: xtreamServer,
+                    user: xtreamUser,
+                    pass: xtreamPass
+                )
+                await MainActor.run {
+                    dismiss()
+                }
+            } catch {
+                // Error is displayed via accountStore.errorMessage
             }
         }
     }

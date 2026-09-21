@@ -51,6 +51,12 @@ public final class PlaylistStore: ObservableObject {
         saveChannelsAsync()
     }
 
+    public func setChannels(_ newChannels: [Channel]) {
+        self.channels = newChannels
+        updateDerivedData()
+        saveChannelsAsync()
+    }
+
     // MARK: - Streaming Chunked M3U Download
     public func addM3UPlaylist(name: String, url: URL) async {
         await MainActor.run {
