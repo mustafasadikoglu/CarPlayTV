@@ -50,8 +50,11 @@ public final class PlaybackManager: ObservableObject {
     private var currentPlaybackToken: UUID = UUID()
     private var timeObserverToken: Any?
     private var statusObserver: NSKeyValueObservation?
+    private var likelyToKeepUpObserver: NSKeyValueObservation?
+    private var bufferEmptyObserver: NSKeyValueObservation?
     private var externalPlaybackObserver: NSKeyValueObservation?
     private var bufferExpansionWorkItem: DispatchWorkItem?
+    private var bufferingWatchdogWorkItem: DispatchWorkItem?
     private var hasRetriedWithAlternateFormat: Bool = false
     private var cancellables = Set<AnyCancellable>()
 
@@ -120,6 +123,10 @@ public final class PlaybackManager: ObservableObject {
             let currentSec = CMTimeGetSeconds(time)
             if !currentSec.isNaN && !currentSec.isInfinite {
                 self.currentTime = currentSec
+                if self.isBuffering && currentSec > 0 {
+                    self.bufferingWatchdogWorkItem?.cancel()
+                    self.isBuffering = false
+                }
             }
 
             if let item = self.player.currentItem {
@@ -186,117 +193,51 @@ public final class PlaybackManager: ObservableObject {
         updateNowPlayingInfo()
     }
 
-    /// Fast non-blocking URL delegate that cancels immediately on receiving HTTP headers (0 bytes of body downloaded)
-    private final class FastProbeDelegate: NSObject, URLSessionDataDelegate {
-        private let continuation: CheckedContinuation<URL?, Never>
-        private var didResume = false
-
-        init(continuation: CheckedContinuation<URL?, Never>) {
-            self.continuation = continuation
-        }
-
-        func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
-            completionHandler(.cancel)
-            guard !didResume else { return }
-            didResume = true
-
-            if let http = response as? HTTPURLResponse, (200...399).contains(http.statusCode) {
-                continuation.resume(returning: http.url ?? dataTask.originalRequest?.url)
-            } else {
-                continuation.resume(returning: nil)
-            }
-        }
-
-        func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-            guard !didResume else { return }
-            didResume = true
-            continuation.resume(returning: nil)
-        }
-    }
-
-    private func probeFast(_ url: URL, method: String, timeout: TimeInterval) async -> URL? {
-        await withCheckedContinuation { cont in
-            let delegate = FastProbeDelegate(continuation: cont)
-            let config = URLSessionConfiguration.ephemeral
-            config.timeoutIntervalForRequest = timeout
-            config.timeoutIntervalForResource = timeout
-            let session = URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
-
-            var req = URLRequest(url: url)
-            req.httpMethod = method
-            req.setValue("bytes=0-1", forHTTPHeaderField: "Range")
-            req.setValue(Self.defaultUserAgent, forHTTPHeaderField: "User-Agent")
-            req.setValue("*/*", forHTTPHeaderField: "Accept")
-
-            let task = session.dataTask(with: req)
-            task.resume()
-
-            DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
-                task.cancel()
-                session.invalidateAndCancel()
-            }
-        }
-    }
-
-    private func probeStreamURL(_ url: URL) async -> URL? {
-        if let head = await probeFast(url, method: "HEAD", timeout: 1.0) {
-            return head
-        }
-        return await probeFast(url, method: "GET", timeout: 1.2)
-    }
-
-    /// Derives alternate container format URL (.mp4 <-> .m3u8 <-> .ts)
+    /// Derives alternate container format URL (.mp4 <-> .mkv <-> .m3u8)
     public func alternateFormatURL(for url: URL) -> URL? {
         let urlStr = url.absoluteString
         if urlStr.hasSuffix(".mp4") {
             let base = String(urlStr.dropLast(4))
-            return URL(string: base + ".m3u8")
+            return URL(string: base + ".mkv") ?? URL(string: base + ".m3u8")
+        } else if urlStr.hasSuffix(".mkv") {
+            let base = String(urlStr.dropLast(4))
+            return URL(string: base + ".mp4") ?? URL(string: base + ".m3u8")
         } else if urlStr.hasSuffix(".m3u8") {
             let base = String(urlStr.dropLast(5))
             return URL(string: base + ".mp4")
-        } else if urlStr.hasSuffix(".mkv") {
-            let base = String(urlStr.dropLast(4))
-            return URL(string: base + ".m3u8") ?? URL(string: base + ".mp4")
         }
         return nil
     }
 
-    /// Pre-resolves stream URL by following redirects (HTTP 302/301) with User-Agent and probes alternate containers (.m3u8 <-> .mp4)
-    public func resolvePlayableURL(for url: URL) async -> URL {
-        let urlStr = url.absoluteString
-        var candidateURLs: [URL] = []
-
-        // Prioritize .m3u8 (HLS) because HLS natively avoids missing 206 byte-range issues in Apple AVPlayer
-        if urlStr.hasSuffix(".mp4") {
-            let base = String(urlStr.dropLast(4))
-            if let u = URL(string: base + ".m3u8") { candidateURLs.append(u) }
-            candidateURLs.append(url)
-        } else if urlStr.hasSuffix(".mkv") {
-            let base = String(urlStr.dropLast(4))
-            if let u = URL(string: base + ".m3u8") { candidateURLs.append(u) }
-            if let u = URL(string: base + ".mp4") { candidateURLs.append(u) }
-            candidateURLs.append(url)
-        } else if urlStr.hasSuffix(".m3u8") {
-            candidateURLs.append(url)
-            let base = String(urlStr.dropLast(5))
-            if let u = URL(string: base + ".mp4") { candidateURLs.append(u) }
-        } else {
-            candidateURLs.append(url)
-        }
-
-        for candidate in candidateURLs {
-            if let resolved = await probeStreamURL(candidate) {
-                SanitizedLogger.info("Stream URL verified: \(URLSanitizer.sanitize(resolved))")
-                return resolved
+    private func startBufferingWatchdog(token: UUID) {
+        bufferingWatchdogWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self = self, self.currentPlaybackToken == token else { return }
+            if self.isBuffering && !self.isPlaying {
+                SanitizedLogger.warning("VOD buffering watchdog timed out after 8s")
+                if let vod = self.currentVODItem, !self.hasRetriedWithAlternateFormat,
+                   let altURL = self.alternateFormatURL(for: vod.streamURL) {
+                    self.hasRetriedWithAlternateFormat = true
+                    SanitizedLogger.info("Watchdog triggering fallback format: \(URLSanitizer.sanitize(altURL))")
+                    var fallback = vod
+                    fallback.streamURL = altURL
+                    self.currentVODItem = fallback
+                    self.playVOD(item: fallback, startFromBeginning: false)
+                } else {
+                    self.isBuffering = false
+                    self.playbackError = "Yayın başlatılamadı. Sunucu akış yanıtı vermiyor."
+                }
             }
         }
-
-        return url
+        self.bufferingWatchdogWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8.0, execute: workItem)
     }
 
     public func playVOD(item: VODItem, startFromBeginning: Bool = false) {
         bufferExpansionWorkItem?.cancel()
         bufferExpansionWorkItem = nil
+        bufferingWatchdogWorkItem?.cancel()
+        bufferingWatchdogWorkItem = nil
 
         let token = UUID()
         self.currentPlaybackToken = token
@@ -310,38 +251,35 @@ public final class PlaybackManager: ObservableObject {
         self.playbackError = nil
         self.pendingSeekTime = (!startFromBeginning && item.lastPosition > 5) ? item.lastPosition : nil
 
-        Task { @MainActor [weak self] in
-            guard let self = self, self.currentPlaybackToken == token else { return }
+        let userAgent = Self.defaultUserAgent
+        let headers: [String: String] = [
+            "User-Agent": userAgent,
+            "Accept": "*/*"
+        ]
+        let asset = AVURLAsset(url: item.streamURL, options: ["AVURLAssetHTTPHeaderFieldsKey": headers])
+        let playerItem = AVPlayerItem(asset: asset)
+        playerItem.preferredForwardBufferDuration = 2.0
+        observePlayerItem(playerItem, token: token)
 
-            // Pre-resolve stream URL (follows 302 redirects and auto-probes HLS .m3u8 fallback)
-            let resolvedURL = await self.resolvePlayableURL(for: item.streamURL)
-            guard self.currentPlaybackToken == token else { return }
+        player.replaceCurrentItem(with: playerItem)
+        player.play()
+        self.isPlaying = true
 
-            let userAgent = Self.defaultUserAgent
-            let headers: [String: String] = [
-                "User-Agent": userAgent,
-                "Accept": "*/*"
-            ]
-            let asset = AVURLAsset(url: resolvedURL, options: ["AVURLAssetHTTPHeaderFieldsKey": headers])
-            let playerItem = AVPlayerItem(asset: asset)
-            playerItem.preferredForwardBufferDuration = 2.0
-            self.observePlayerItem(playerItem, token: token)
-
-            self.player.replaceCurrentItem(with: playerItem)
-            self.player.play()
-            self.isPlaying = true
-
-            self.updateNowPlayingInfo()
-        }
+        startBufferingWatchdog(token: token)
+        updateNowPlayingInfo()
     }
 
     private func observePlayerItem(_ playerItem: AVPlayerItem, token: UUID) {
         statusObserver?.invalidate()
+        likelyToKeepUpObserver?.invalidate()
+        bufferEmptyObserver?.invalidate()
+
         statusObserver = playerItem.observe(\.status, options: [.new, .initial]) { [weak self] item, _ in
             DispatchQueue.main.async {
                 guard let self = self, self.currentPlaybackToken == token else { return }
                 switch item.status {
                 case .readyToPlay:
+                    self.bufferingWatchdogWorkItem?.cancel()
                     self.isBuffering = false
                     self.isPlaying = true
                     if let dur = self.player.currentItem?.duration {
@@ -357,6 +295,7 @@ public final class PlaybackManager: ObservableObject {
                         self.player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero)
                     }
                 case .failed:
+                    self.bufferingWatchdogWorkItem?.cancel()
                     // If VOD playback fails, automatically attempt seamless retry with alternate container (.m3u8 <-> .mp4)
                     if let vod = self.currentVODItem, !self.hasRetriedWithAlternateFormat,
                        let altURL = self.alternateFormatURL(for: vod.streamURL) {
@@ -376,6 +315,28 @@ public final class PlaybackManager: ObservableObject {
                     self.playbackError = msg
                 default:
                     break
+                }
+            }
+        }
+
+        likelyToKeepUpObserver = playerItem.observe(\.isPlaybackLikelyToKeepUp, options: [.new]) { [weak self] item, _ in
+            DispatchQueue.main.async {
+                guard let self = self, self.currentPlaybackToken == token else { return }
+                if item.isPlaybackLikelyToKeepUp {
+                    self.bufferingWatchdogWorkItem?.cancel()
+                    self.isBuffering = false
+                    if self.isPlaying {
+                        self.player.play()
+                    }
+                }
+            }
+        }
+
+        bufferEmptyObserver = playerItem.observe(\.isPlaybackBufferEmpty, options: [.new]) { [weak self] item, _ in
+            DispatchQueue.main.async {
+                guard let self = self, self.currentPlaybackToken == token else { return }
+                if item.isPlaybackBufferEmpty {
+                    self.isBuffering = true
                 }
             }
         }
