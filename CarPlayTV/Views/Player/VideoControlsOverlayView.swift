@@ -2,10 +2,12 @@ import SwiftUI
 
 public struct VideoControlsOverlayView: View {
     @ObservedObject var playback = PlaybackManager.shared
+    @ObservedObject var epgStore = EPGStore.shared
     @State private var areControlsVisible: Bool = true
     @State private var hideTimer: Timer?
     @State private var brightnessValue: CGFloat = UIScreen.main.brightness
     @State private var volumeGestureOffset: CGFloat = 0
+    @State private var isShowingEPGSheet: Bool = false
 
     var onClose: (() -> Void)?
 
@@ -53,10 +55,21 @@ public struct VideoControlsOverlayView: View {
                                             .foregroundColor(.white.opacity(0.7))
                                     }
 
-                                    Text(channel.name)
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-                                        .lineLimit(1)
+                                    HStack(spacing: 6) {
+                                        Text(channel.name)
+                                            .font(.headline)
+                                            .foregroundColor(.white)
+                                            .lineLimit(1)
+
+                                        if let prog = epgStore.currentProgram(for: channel) {
+                                            Text("•")
+                                                .foregroundColor(.white.opacity(0.4))
+                                            Text(prog.title)
+                                                .font(.subheadline)
+                                                .foregroundColor(.white.opacity(0.9))
+                                                .lineLimit(1)
+                                        }
+                                    }
                                 }
                             }
                         } else {
@@ -126,6 +139,19 @@ public struct VideoControlsOverlayView: View {
                                 .padding(8)
                                 .background(.ultraThinMaterial)
                                 .clipShape(Circle())
+                        }
+
+                        if playback.isLiveStream, playback.currentChannel != nil {
+                            Button(action: {
+                                isShowingEPGSheet = true
+                            }) {
+                                Image(systemName: "calendar.badge.clock")
+                                    .font(.title3)
+                                    .foregroundColor(.white.opacity(0.9))
+                                    .padding(8)
+                                    .background(.ultraThinMaterial)
+                                    .clipShape(Circle())
+                            }
                         }
                     }
                     .padding()
@@ -262,6 +288,11 @@ public struct VideoControlsOverlayView: View {
         }
         .onAppear {
             resetTimer()
+        }
+        .sheet(isPresented: $isShowingEPGSheet) {
+            if let channel = playback.currentChannel {
+                ChannelEPGSheetView(channel: channel)
+            }
         }
     }
 

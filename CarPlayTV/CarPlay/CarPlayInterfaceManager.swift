@@ -259,7 +259,15 @@ public final class CarPlayInterfaceManager {
     }
 
     private func makeListItem(for channel: Channel) -> CPListItem {
-        let item = CPListItem(text: channel.name, detailText: channel.groupTitle)
+        let currentProg = EPGStore.shared.currentProgram(for: channel)
+        let detailText: String
+        if let prog = currentProg {
+            detailText = "Şu an: \(prog.title) (\(prog.timeRangeString))"
+        } else {
+            detailText = channel.groupTitle
+        }
+
+        let item = CPListItem(text: channel.name, detailText: detailText)
 
         if let logoURL = channel.logoURL, let cached = ImageCacheManager.shared.cachedImageFromMemory(for: logoURL) {
             item.setImage(cached)

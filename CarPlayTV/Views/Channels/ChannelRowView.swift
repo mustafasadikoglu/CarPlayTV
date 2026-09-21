@@ -6,6 +6,9 @@ public struct ChannelRowView: View {
     let onSelect: () -> Void
     let onToggleFavorite: () -> Void
 
+    @ObservedObject var epgStore = EPGStore.shared
+    @State private var isShowingEPGSheet: Bool = false
+
     public var body: some View {
         Button(action: onSelect) {
             HStack(spacing: 14) {
@@ -28,21 +31,13 @@ public struct ChannelRowView: View {
                     }
                 }
 
-                // Name & Group
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(channel.name)
-                        .font(.system(size: 16, weight: isCurrent ? .bold : .medium))
-                        .foregroundColor(isCurrent ? .accentColor : .primary)
-                        .lineLimit(1)
-
+                // Name, Group & EPG Info
+                VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
-                        Text(channel.groupTitle)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.secondary.opacity(0.15))
-                            .cornerRadius(4)
+                        Text(channel.name)
+                            .font(.system(size: 16, weight: isCurrent ? .bold : .medium))
+                            .foregroundColor(isCurrent ? .accentColor : .primary)
+                            .lineLimit(1)
 
                         if isCurrent {
                             HStack(spacing: 3) {
@@ -53,16 +48,64 @@ public struct ChannelRowView: View {
                             }
                         }
                     }
+
+                    // EPG Now Playing Info
+                    if let program = epgStore.currentProgram(for: channel) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 4) {
+                                Text(program.title)
+                                    .font(.caption.weight(.medium))
+                                    .foregroundColor(.primary.opacity(0.85))
+                                    .lineLimit(1)
+
+                                Text("•")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+
+                                Text(program.timeRangeString)
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                            }
+
+                            // Mini Progress Bar
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    Capsule()
+                                        .fill(Color.gray.opacity(0.2))
+                                        .frame(height: 2.5)
+                                    Capsule()
+                                        .fill(Color.accentColor)
+                                        .frame(width: max(geo.size.width * CGFloat(program.progressPercentage), 2), height: 2.5)
+                                }
+                            }
+                            .frame(height: 2.5)
+                        }
+                    } else {
+                        Text(channel.groupTitle)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
 
                 Spacer()
+
+                // EPG Schedule Button
+                Button(action: {
+                    isShowingEPGSheet = true
+                }) {
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.system(size: 15))
+                        .foregroundColor(.secondary.opacity(0.8))
+                        .padding(6)
+                }
+                .buttonStyle(BorderlessButtonStyle())
 
                 // Favorite Toggle Button
                 Button(action: onToggleFavorite) {
                     Image(systemName: channel.isFavorite ? "star.fill" : "star")
                         .foregroundColor(channel.isFavorite ? .yellow : .gray.opacity(0.5))
                         .font(.system(size: 18))
-                        .padding(8)
+                        .padding(6)
                 }
                 .buttonStyle(BorderlessButtonStyle())
             }
@@ -70,5 +113,8 @@ public struct ChannelRowView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
+        .sheet(isPresented: $isShowingEPGSheet) {
+            ChannelEPGSheetView(channel: channel)
+        }
     }
 }

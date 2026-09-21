@@ -14,6 +14,7 @@ public class AppDelegate: UIResponder, UIApplicationDelegate {
         _ = VODStore.shared
         _ = ImageCacheManager.shared
         _ = KeychainHelper.shared
+        _ = EPGStore.shared
         _ = CarPlayVideoWindowController.shared
         return true
     }
