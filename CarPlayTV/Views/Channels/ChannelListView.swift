@@ -132,7 +132,7 @@ public struct ChannelListView: View {
             }
             .navigationTitle("Canlı TV")
             .searchable(text: $searchText, prompt: "Kanal veya kategori ara...")
-            .onChange(of: searchText) { newQuery in
+            .onChange(of: searchText, perform: { newQuery in
                 searchTask?.cancel()
                 searchTask = Task {
                     try? await Task.sleep(nanoseconds: 250_000_000) // 250ms debounce
@@ -147,7 +147,7 @@ public struct ChannelListView: View {
                         }
                     }
                 }
-            }
+            })
             .fullScreenCover(isPresented: $isPresentingFullscreenPlayer) {
                 FullscreenPlayerView()
             }

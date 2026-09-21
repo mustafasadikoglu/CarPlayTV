@@ -38,6 +38,7 @@ jobs:
 
       - name: Build App with xcodebuild
         run: |
+          set -o pipefail
           xcodebuild -project CarPlayTV.xcodeproj \
             -scheme CarPlayTV \
             -configuration Release \
@@ -47,7 +48,18 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            clean build
+            clean build 2>&1 | tee xcodebuild.log || {
+              echo "::error::=== XCODEBUILD FAILED: COMPILATION ERRORS ==="
+              grep -C 3 -E "(error:|fatal error:)" xcodebuild.log || tail -n 150 xcodebuild.log
+              exit 1
+            }
+
+      - name: Upload Build Log on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-failure-log
+          path: xcodebuild.log
 
       - name: Package Unsigned IPA (TrollStore / Sideload Ready)
         run: |
