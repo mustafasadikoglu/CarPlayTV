@@ -101,7 +101,8 @@ public final class ImageCacheManager {
             return nil
         }
 
-        let maxDimension = max(targetSize.width, targetSize.height) * UIScreen.main.scale
+        let screenScale: CGFloat = 3.0
+        let maxDimension = max(targetSize.width, targetSize.height) * screenScale
         let downsampleOptions = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceShouldCacheImmediately: true,

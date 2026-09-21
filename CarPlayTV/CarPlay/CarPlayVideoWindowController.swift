@@ -40,11 +40,11 @@ public final class CarPlayVideoWindowController {
         // If mode is set to forceExternalWindow or if external screens are detected
         guard PlaybackManager.shared.carPlayVideoMode == .forceExternalWindow else { return }
 
-        let targetScreen = screen ?? UIScreen.screens.first(where: { $0 != UIScreen.main })
-        guard let externalScreen = targetScreen else { return }
-
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
+
+            let targetScreen = screen ?? UIScreen.screens.first(where: { $0 != UIScreen.main })
+            guard let externalScreen = targetScreen else { return }
 
             // Create window on external screen
             let window = UIWindow(frame: externalScreen.bounds)

@@ -5,8 +5,6 @@ public struct VideoControlsOverlayView: View {
     @ObservedObject var epgStore = EPGStore.shared
     @State private var areControlsVisible: Bool = true
     @State private var hideTimer: Timer?
-    @State private var brightnessValue: CGFloat = UIScreen.main.brightness
-    @State private var volumeGestureOffset: CGFloat = 0
     @State private var isShowingEPGSheet: Bool = false
 
     var onClose: (() -> Void)?

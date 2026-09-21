@@ -49,8 +49,10 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             clean build 2>&1 | tee xcodebuild.log || {
-              echo "::error::=== XCODEBUILD FAILED: COMPILATION ERRORS ==="
-              grep -C 3 -E "(error:|fatal error:)" xcodebuild.log || tail -n 150 xcodebuild.log
+              echo "=== XCODEBUILD FAILED ==="
+              grep "error:" xcodebuild.log | head -n 30 | while IFS= read -r line; do
+                echo "::error title=CompilerError::$line"
+              done
               exit 1
             }
 
