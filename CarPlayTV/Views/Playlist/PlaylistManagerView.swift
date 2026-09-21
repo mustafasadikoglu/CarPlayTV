@@ -35,6 +35,7 @@ public struct PlaylistManagerView: View {
                             }
                             .padding(.vertical, 4)
                         }
+                        .onDelete(perform: store.deletePlaylist)
                     }
                 }
 

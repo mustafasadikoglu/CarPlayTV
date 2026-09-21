@@ -64,6 +64,40 @@ public struct CarPlaySettingsView: View {
                     }
                 }
 
+                // Güvenlik & Önbellek Yönetimi
+                Section("Güvenlik & Gizlilik (Faz 1)") {
+                    HStack {
+                        Label("Keychain Kimlik Koruması", systemImage: "key.fill")
+                        Spacer()
+                        Text("Aktif")
+                            .font(.caption.bold())
+                            .foregroundColor(.green)
+                    }
+
+                    HStack {
+                        Label("ATS Ağ Güvenliği", systemImage: "lock.shield.fill")
+                        Spacer()
+                        Text("HTTPS Zorunlu")
+                            .font(.caption.bold())
+                            .foregroundColor(.green)
+                    }
+
+                    HStack {
+                        Label("URL & Log Sansürleme", systemImage: "eye.slash.fill")
+                        Spacer()
+                        Text("Zero-Leakage")
+                            .font(.caption.bold())
+                            .foregroundColor(.green)
+                    }
+
+                    Button(role: .destructive, action: {
+                        ImageCacheManager.shared.clearMemoryCache()
+                        ImageCacheManager.shared.clearDiskCache()
+                    }) {
+                        Label("Görsel & Logo Önbelleğini Temizle", systemImage: "trash")
+                    }
+                }
+
                 // Apple Güvenlik ve Geliştirici Notu
                 Section("Teknik Bilgi & Güvenlik") {
                     VStack(alignment: .leading, spacing: 8) {
