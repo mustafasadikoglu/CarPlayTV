@@ -9,10 +9,12 @@ public final class CarPlayInterfaceManager {
     private var interfaceController: CPInterfaceController?
     private var cancellables = Set<AnyCancellable>()
 
+    private var gridTemplate: CPGridTemplate?
     private var favoritesTemplate: CPListTemplate?
     private var categoriesTemplate: CPListTemplate?
     private var moviesTemplate: CPListTemplate?
     private var recentsTemplate: CPListTemplate?
+    private var rootTabBar: CPTabBarTemplate?
 
     private init() {
         observeDataStore()
@@ -25,6 +27,7 @@ public final class CarPlayInterfaceManager {
 
     public func clearInterfaceController() {
         self.interfaceController = nil
+        self.rootTabBar = nil
     }
 
     private func observeDataStore() {
@@ -32,6 +35,14 @@ public final class CarPlayInterfaceManager {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.refreshFavoritesTemplate()
+                self?.refreshGridTemplate()
+            }
+            .store(in: &cancellables)
+
+        PlaylistStore.shared.$channels
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.refreshGridTemplate()
             }
             .store(in: &cancellables)
 
@@ -67,9 +78,9 @@ public final class CarPlayInterfaceManager {
     public func buildRootTemplate() {
         guard let controller = interfaceController else { return }
 
-        // 1. Favorites Tab
-        let favorites = makeFavoritesTemplate()
-        self.favoritesTemplate = favorites
+        // 1. Grid Tab (Hızlı Erişim - 1. Sekme)
+        let grid = makeGridTemplate()
+        self.gridTemplate = grid
 
         // 2. Categories Tab
         let categories = makeCategoriesTemplate()
@@ -79,17 +90,52 @@ public final class CarPlayInterfaceManager {
         let movies = makeMoviesTemplate()
         self.moviesTemplate = movies
 
-        // 4. Recents Tab
+        // 4. Favorites Tab
+        let favorites = makeFavoritesTemplate()
+        self.favoritesTemplate = favorites
+
+        // 5. Recents Tab
         let recents = makeRecentsTemplate()
         self.recentsTemplate = recents
 
-        // 5. Tab Bar Template
-        let tabBar = CPTabBarTemplate(templates: [favorites, categories, movies, recents])
+        // 6. Tab Bar Template
+        let tabBar = CPTabBarTemplate(templates: [grid, categories, movies, favorites, recents])
+        self.rootTabBar = tabBar
         controller.setRootTemplate(tabBar, animated: true, completion: nil)
     }
 
-
     // MARK: - Templates Creation
+    private func makeGridTemplate() -> CPGridTemplate {
+        let favorites = PlaylistStore.shared.favoriteChannels
+        let allChannels = PlaylistStore.shared.channels
+        let channelsToUse: [Channel]
+
+        if !favorites.isEmpty {
+            channelsToUse = Array(favorites.prefix(8))
+        } else if !allChannels.isEmpty {
+            channelsToUse = Array(allChannels.prefix(8))
+        } else {
+            channelsToUse = []
+        }
+
+        let buttons: [CPGridButton] = channelsToUse.map { channel in
+            let iconImage = UIImage(systemName: "tv.fill") ?? UIImage()
+            let shortTitle = String(channel.name.prefix(8))
+            let button = CPGridButton(
+                titleVariants: [channel.name, shortTitle],
+                image: iconImage
+            ) { [weak self] _ in
+                self?.playChannel(channel)
+            }
+            return button
+        }
+
+        let template = CPGridTemplate(title: "Hızlı Erişim", gridButtons: buttons)
+        template.tabTitle = "Hızlı Erişim"
+        template.tabImage = UIImage(systemName: "sparkles.tv")
+        return template
+    }
+
     private func makeFavoritesTemplate() -> CPListTemplate {
         let items = PlaylistStore.shared.favoriteChannels.map { channel in
             makeListItem(for: channel)
@@ -260,5 +306,20 @@ public final class CarPlayInterfaceManager {
         }
         categoriesTemplate?.updateSections([CPListSection(items: items)])
     }
+
+    private func refreshGridTemplate() {
+        let newGrid = makeGridTemplate()
+        self.gridTemplate = newGrid
+
+        var templates: [CPTemplate] = []
+        if let g = gridTemplate { templates.append(g) }
+        if let c = categoriesTemplate { templates.append(c) }
+        if let m = moviesTemplate { templates.append(m) }
+        if let f = favoritesTemplate { templates.append(f) }
+        if let r = recentsTemplate { templates.append(r) }
+
+        rootTabBar?.updateTemplates(templates)
+    }
 }
+
 
