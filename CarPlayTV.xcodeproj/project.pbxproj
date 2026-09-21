@@ -1,0 +1,367 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1A2B3C4D5E6F117307D70000 /* CarPlayTVApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F122338370000 /* CarPlayTVApp.swift */; };
+		1A2B3C4D5E6F7BF4BF090000 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F34D97F450000 /* SceneDelegate.swift */; };
+		1A2B3C4D5E6F639F589E0000 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F48A621300000 /* AppDelegate.swift */; };
+		1A2B3C4D5E6F2084B2020000 /* Channel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F1ED862700000 /* Channel.swift */; };
+		1A2B3C4D5E6F5D615C900000 /* XtreamModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F13993F5E0000 /* XtreamModels.swift */; };
+		1A2B3C4D5E6F48F16ADF0000 /* M3UParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F4E1509AF0000 /* M3UParser.swift */; };
+		1A2B3C4D5E6F416402690000 /* XtreamCodesClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F4D53F7090000 /* XtreamCodesClient.swift */; };
+		1A2B3C4D5E6F1A2273FB0000 /* PlaybackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F4AF1DE130000 /* PlaybackManager.swift */; };
+		1A2B3C4D5E6F6351AAE20000 /* PlaylistStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F71CF28700000 /* PlaylistStore.swift */; };
+		1A2B3C4D5E6F1FE7BC940000 /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F5F4857A20000 /* CarPlaySceneDelegate.swift */; };
+		1A2B3C4D5E6F231419650000 /* CarPlayInterfaceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F2807C8CD0000 /* CarPlayInterfaceManager.swift */; };
+		1A2B3C4D5E6F34B7A5D60000 /* CarPlayVideoWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F359C07380000 /* CarPlayVideoWindowController.swift */; };
+		1A2B3C4D5E6F43F466270000 /* CustomVideoPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F3A34014B0000 /* CustomVideoPlayerView.swift */; };
+		1A2B3C4D5E6F13F66D370000 /* VideoControlsOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F0BE79E170000 /* VideoControlsOverlayView.swift */; };
+		1A2B3C4D5E6F18B4D44C0000 /* FullscreenPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F2508B69A0000 /* FullscreenPlayerView.swift */; };
+		1A2B3C4D5E6F5C157DC00000 /* ChannelRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F509D48F20000 /* ChannelRowView.swift */; };
+		1A2B3C4D5E6F335902F40000 /* ChannelListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F49B2F3660000 /* ChannelListView.swift */; };
+		1A2B3C4D5E6F5C701F520000 /* AddPlaylistSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F11543D200000 /* AddPlaylistSheet.swift */; };
+		1A2B3C4D5E6F69B090C80000 /* PlaylistManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F1477D6AA0000 /* PlaylistManagerView.swift */; };
+		1A2B3C4D5E6F63CB83C90000 /* CarPlaySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F1A5CE3A90000 /* CarPlaySettingsView.swift */; };
+		1A2B3C4D5E6F264C3BBA0000 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F28E585F80000 /* MainTabView.swift */; };
+		1A2B3C4D5E6F480E07B80000 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F64DF47140000 /* Assets.xcassets */; };
+		1A2B3C4D5E6F216438670000 /* CarPlay.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F2E8829020000 /* CarPlay.framework */; };
+		1A2B3C4D5E6F133590090000 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F5786C84E0000 /* AVFoundation.framework */; };
+		1A2B3C4D5E6F3794A1F20000 /* AVKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F6378B9690000 /* AVKit.framework */; };
+		1A2B3C4D5E6F2943126A0000 /* MediaPlayer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F2B773D850000 /* MediaPlayer.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1A2B3C4D5E6F58E3992F0000 /* CarPlayTV.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CarPlayTV.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1A2B3C4D5E6F122338370000 /* CarPlayTVApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CarPlayTVApp.swift"; path = "CarPlayTV/App/CarPlayTVApp.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F34D97F450000 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "SceneDelegate.swift"; path = "CarPlayTV/App/SceneDelegate.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F48A621300000 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "AppDelegate.swift"; path = "CarPlayTV/App/AppDelegate.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F1ED862700000 /* Channel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "Channel.swift"; path = "CarPlayTV/Models/Channel.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F13993F5E0000 /* XtreamModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "XtreamModels.swift"; path = "CarPlayTV/Models/XtreamModels.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F4E1509AF0000 /* M3UParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "M3UParser.swift"; path = "CarPlayTV/Services/M3UParser.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F4D53F7090000 /* XtreamCodesClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "XtreamCodesClient.swift"; path = "CarPlayTV/Services/XtreamCodesClient.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F4AF1DE130000 /* PlaybackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "PlaybackManager.swift"; path = "CarPlayTV/Services/PlaybackManager.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F71CF28700000 /* PlaylistStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "PlaylistStore.swift"; path = "CarPlayTV/Services/PlaylistStore.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F5F4857A20000 /* CarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CarPlaySceneDelegate.swift"; path = "CarPlayTV/CarPlay/CarPlaySceneDelegate.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F2807C8CD0000 /* CarPlayInterfaceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CarPlayInterfaceManager.swift"; path = "CarPlayTV/CarPlay/CarPlayInterfaceManager.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F359C07380000 /* CarPlayVideoWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CarPlayVideoWindowController.swift"; path = "CarPlayTV/CarPlay/CarPlayVideoWindowController.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F3A34014B0000 /* CustomVideoPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CustomVideoPlayerView.swift"; path = "CarPlayTV/Views/Player/CustomVideoPlayerView.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F0BE79E170000 /* VideoControlsOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "VideoControlsOverlayView.swift"; path = "CarPlayTV/Views/Player/VideoControlsOverlayView.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F2508B69A0000 /* FullscreenPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "FullscreenPlayerView.swift"; path = "CarPlayTV/Views/Player/FullscreenPlayerView.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F509D48F20000 /* ChannelRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ChannelRowView.swift"; path = "CarPlayTV/Views/Channels/ChannelRowView.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F49B2F3660000 /* ChannelListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ChannelListView.swift"; path = "CarPlayTV/Views/Channels/ChannelListView.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F11543D200000 /* AddPlaylistSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "AddPlaylistSheet.swift"; path = "CarPlayTV/Views/Playlist/AddPlaylistSheet.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F1477D6AA0000 /* PlaylistManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "PlaylistManagerView.swift"; path = "CarPlayTV/Views/Playlist/PlaylistManagerView.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F1A5CE3A90000 /* CarPlaySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CarPlaySettingsView.swift"; path = "CarPlayTV/Views/Settings/CarPlaySettingsView.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F28E585F80000 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "MainTabView.swift"; path = "CarPlayTV/Views/MainTabView.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F64DF47140000 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = "Assets.xcassets"; path = "CarPlayTV/Assets.xcassets"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F5F8AE4C50000 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Info.plist"; path = "CarPlayTV/Info.plist"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F4F2062970000 /* CarPlayTV.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = "CarPlayTV.entitlements"; path = "CarPlayTV/CarPlayTV.entitlements"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F2E8829020000 /* CarPlay.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = "CarPlay.framework"; path = "System/Library/Frameworks/CarPlay.framework"; sourceTree = SDKROOT; };
+		1A2B3C4D5E6F5786C84E0000 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = "AVFoundation.framework"; path = "System/Library/Frameworks/AVFoundation.framework"; sourceTree = SDKROOT; };
+		1A2B3C4D5E6F6378B9690000 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = "AVKit.framework"; path = "System/Library/Frameworks/AVKit.framework"; sourceTree = SDKROOT; };
+		1A2B3C4D5E6F2B773D850000 /* MediaPlayer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = "MediaPlayer.framework"; path = "System/Library/Frameworks/MediaPlayer.framework"; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1A2B3C4D5E6F5CCB27730000 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1A2B3C4D5E6F216438670000 /* CarPlay.framework in Frameworks */,
+				1A2B3C4D5E6F133590090000 /* AVFoundation.framework in Frameworks */,
+				1A2B3C4D5E6F3794A1F20000 /* AVKit.framework in Frameworks */,
+				1A2B3C4D5E6F2943126A0000 /* MediaPlayer.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1A2B3C4D5E6F2F7970790000 = {
+			isa = PBXGroup;
+			children = (
+				1A2B3C4D5E6F6D28F6E10000 /* CarPlayTV */,
+				1A2B3C4D5E6F5D453A6F0000 /* Frameworks */,
+				1A2B3C4D5E6F00378FE40000 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		1A2B3C4D5E6F00378FE40000 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1A2B3C4D5E6F58E3992F0000 /* CarPlayTV.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		1A2B3C4D5E6F5D453A6F0000 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1A2B3C4D5E6F2E8829020000 /* CarPlay.framework */,
+				1A2B3C4D5E6F5786C84E0000 /* AVFoundation.framework */,
+				1A2B3C4D5E6F6378B9690000 /* AVKit.framework */,
+				1A2B3C4D5E6F2B773D850000 /* MediaPlayer.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		1A2B3C4D5E6F6D28F6E10000 /* CarPlayTV */ = {
+			isa = PBXGroup;
+			children = (
+				1A2B3C4D5E6F122338370000 /* CarPlayTVApp.swift */,
+				1A2B3C4D5E6F34D97F450000 /* SceneDelegate.swift */,
+				1A2B3C4D5E6F48A621300000 /* AppDelegate.swift */,
+				1A2B3C4D5E6F1ED862700000 /* Channel.swift */,
+				1A2B3C4D5E6F13993F5E0000 /* XtreamModels.swift */,
+				1A2B3C4D5E6F4E1509AF0000 /* M3UParser.swift */,
+				1A2B3C4D5E6F4D53F7090000 /* XtreamCodesClient.swift */,
+				1A2B3C4D5E6F4AF1DE130000 /* PlaybackManager.swift */,
+				1A2B3C4D5E6F71CF28700000 /* PlaylistStore.swift */,
+				1A2B3C4D5E6F5F4857A20000 /* CarPlaySceneDelegate.swift */,
+				1A2B3C4D5E6F2807C8CD0000 /* CarPlayInterfaceManager.swift */,
+				1A2B3C4D5E6F359C07380000 /* CarPlayVideoWindowController.swift */,
+				1A2B3C4D5E6F3A34014B0000 /* CustomVideoPlayerView.swift */,
+				1A2B3C4D5E6F0BE79E170000 /* VideoControlsOverlayView.swift */,
+				1A2B3C4D5E6F2508B69A0000 /* FullscreenPlayerView.swift */,
+				1A2B3C4D5E6F509D48F20000 /* ChannelRowView.swift */,
+				1A2B3C4D5E6F49B2F3660000 /* ChannelListView.swift */,
+				1A2B3C4D5E6F11543D200000 /* AddPlaylistSheet.swift */,
+				1A2B3C4D5E6F1477D6AA0000 /* PlaylistManagerView.swift */,
+				1A2B3C4D5E6F1A5CE3A90000 /* CarPlaySettingsView.swift */,
+				1A2B3C4D5E6F28E585F80000 /* MainTabView.swift */,
+				1A2B3C4D5E6F64DF47140000 /* Assets.xcassets */,
+				1A2B3C4D5E6F5F8AE4C50000 /* Info.plist */,
+				1A2B3C4D5E6F4F2062970000 /* CarPlayTV.entitlements */,
+			);
+			path = CarPlayTV;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1A2B3C4D5E6F3D14605C0000 /* CarPlayTV */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1A2B3C4D5E6F6A3D76920000 /* Build configuration list for PBXNativeTarget "CarPlayTV" */;
+			buildPhases = (
+				1A2B3C4D5E6F0E4E5E340000 /* Sources */,
+				1A2B3C4D5E6F5CCB27730000 /* Frameworks */,
+				1A2B3C4D5E6F6E342D1C0000 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CarPlayTV;
+			productName = CarPlayTV;
+			productReference = 1A2B3C4D5E6F58E3992F0000 /* CarPlayTV.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1A2B3C4D5E6F380169210000 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					1A2B3C4D5E6F3D14605C0000 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = 1A2B3C4D5E6F6BCF2EDC0000 /* Build configuration list for PBXProject "CarPlayTV" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 1A2B3C4D5E6F2F7970790000;
+			productRefGroup = 1A2B3C4D5E6F00378FE40000 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1A2B3C4D5E6F3D14605C0000 /* CarPlayTV */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1A2B3C4D5E6F6E342D1C0000 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1A2B3C4D5E6F480E07B80000 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1A2B3C4D5E6F0E4E5E340000 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1A2B3C4D5E6F117307D70000 /* CarPlayTVApp.swift in Sources */,
+				1A2B3C4D5E6F7BF4BF090000 /* SceneDelegate.swift in Sources */,
+				1A2B3C4D5E6F639F589E0000 /* AppDelegate.swift in Sources */,
+				1A2B3C4D5E6F2084B2020000 /* Channel.swift in Sources */,
+				1A2B3C4D5E6F5D615C900000 /* XtreamModels.swift in Sources */,
+				1A2B3C4D5E6F48F16ADF0000 /* M3UParser.swift in Sources */,
+				1A2B3C4D5E6F416402690000 /* XtreamCodesClient.swift in Sources */,
+				1A2B3C4D5E6F1A2273FB0000 /* PlaybackManager.swift in Sources */,
+				1A2B3C4D5E6F6351AAE20000 /* PlaylistStore.swift in Sources */,
+				1A2B3C4D5E6F1FE7BC940000 /* CarPlaySceneDelegate.swift in Sources */,
+				1A2B3C4D5E6F231419650000 /* CarPlayInterfaceManager.swift in Sources */,
+				1A2B3C4D5E6F34B7A5D60000 /* CarPlayVideoWindowController.swift in Sources */,
+				1A2B3C4D5E6F43F466270000 /* CustomVideoPlayerView.swift in Sources */,
+				1A2B3C4D5E6F13F66D370000 /* VideoControlsOverlayView.swift in Sources */,
+				1A2B3C4D5E6F18B4D44C0000 /* FullscreenPlayerView.swift in Sources */,
+				1A2B3C4D5E6F5C157DC00000 /* ChannelRowView.swift in Sources */,
+				1A2B3C4D5E6F335902F40000 /* ChannelListView.swift in Sources */,
+				1A2B3C4D5E6F5C701F520000 /* AddPlaylistSheet.swift in Sources */,
+				1A2B3C4D5E6F69B090C80000 /* PlaylistManagerView.swift in Sources */,
+				1A2B3C4D5E6F63CB83C90000 /* CarPlaySettingsView.swift in Sources */,
+				1A2B3C4D5E6F264C3BBA0000 /* MainTabView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1A2B3C4D5E6F76CA15B00000 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		1A2B3C4D5E6F7E7F21600000 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		1A2B3C4D5E6F1A070A840000 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = CarPlayTV/CarPlayTV.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CarPlayTV/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.carplaytv.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		1A2B3C4D5E6F1E21426C0000 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = CarPlayTV/CarPlayTV.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CarPlayTV/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.carplaytv.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1A2B3C4D5E6F6BCF2EDC0000 /* Build configuration list for PBXProject "CarPlayTV" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1A2B3C4D5E6F76CA15B00000 /* Debug */,
+				1A2B3C4D5E6F7E7F21600000 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1A2B3C4D5E6F6A3D76920000 /* Build configuration list for PBXNativeTarget "CarPlayTV" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1A2B3C4D5E6F1A070A840000 /* Debug */,
+				1A2B3C4D5E6F1E21426C0000 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+	};
+	rootObject = 1A2B3C4D5E6F380169210000 /* Project object */;
+}
