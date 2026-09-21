@@ -75,9 +75,9 @@ public struct CarPlaySettingsView: View {
                     }
 
                     HStack {
-                        Label("ATS Ağ Güvenliği", systemImage: "lock.shield.fill")
+                        Label("IPTV Ağ İzni (HTTP/HTTPS)", systemImage: "network")
                         Spacer()
-                        Text("HTTPS Zorunlu")
+                        Text("Tüm Protokoller Aktif")
                             .font(.caption.bold())
                             .foregroundColor(.green)
                     }

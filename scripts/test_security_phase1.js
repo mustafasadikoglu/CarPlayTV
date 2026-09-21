@@ -139,11 +139,11 @@ console.log("\n[Test 4] Verify Info.plist ATS Hardening");
 const infoPlistPath = path.join(__dirname, '..', 'CarPlayTV', 'Info.plist');
 const infoPlistContent = fs.readFileSync(infoPlistPath, 'utf8');
 
-if (!infoPlistContent.includes("<key>NSAllowsArbitraryLoads</key>\n\t\t<false/>") &&
-    !infoPlistContent.includes("<key>NSAllowsArbitraryLoads</key>\r\n\t\t<false/>")) {
-    throw new Error("Info.plist: NSAllowsArbitraryLoads must be false!");
+if (!infoPlistContent.includes("<key>NSAllowsArbitraryLoads</key>\n\t\t<true/>") &&
+    !infoPlistContent.includes("<key>NSAllowsArbitraryLoads</key>\r\n\t\t<true/>")) {
+    throw new Error("Info.plist: NSAllowsArbitraryLoads must be true for IPTV providers!");
 }
-console.log("- NSAllowsArbitraryLoads is false (API calls forced to HTTPS).");
+console.log("- NSAllowsArbitraryLoads is true (HTTP & HTTPS allowed for IPTV providers).");
 
 if (!infoPlistContent.includes("<key>NSAllowsArbitraryLoadsForMedia</key>\n\t\t<true/>") &&
     !infoPlistContent.includes("<key>NSAllowsArbitraryLoadsForMedia</key>\r\n\t\t<true/>")) {
