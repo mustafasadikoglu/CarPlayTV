@@ -249,11 +249,9 @@ public final class XtreamCodesClient {
         let pathPass = encodePathComponent(password)
 
         return vodStreams.compactMap { stream -> VODItem? in
-            var ext = stream.containerExtension?.lowercased().trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) ?? "mp4"
-            if ext == "mkv" || ext == "avi" || ext.isEmpty {
-                // Apple AVPlayer cannot play MKV or AVI containers. Requesting mp4 triggers server-side MP4 streaming
-                ext = "mp4"
-            }
+            guard stream.streamId > 0 else { return nil }
+            var ext = stream.containerExtension?.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: ". \t\r\n")) ?? "mp4"
+            if ext.isEmpty { ext = "mp4" }
             let streamUrlString = "\(cleanBase)/movie/\(pathUser)/\(pathPass)/\(stream.streamId).\(ext)"
             guard let streamURL = URL(string: streamUrlString) else { return nil }
 
@@ -373,10 +371,9 @@ public final class XtreamCodesClient {
                 var vodEpisodes: [VODItem] = []
 
                 for ep in epList {
-                    var ext = (ep.containerExtension ?? ep.info?.containerExtension)?.lowercased().trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) ?? "mp4"
-                    if ext == "mkv" || ext == "avi" || ext.isEmpty {
-                        ext = "mp4"
-                    }
+                    guard !ep.id.isEmpty && ep.id != "0" else { continue }
+                    var ext = (ep.containerExtension ?? ep.info?.containerExtension)?.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: ". \t\r\n")) ?? "mp4"
+                    if ext.isEmpty { ext = "mp4" }
                     let streamUrlString = "\(cleanBase)/series/\(pathUser)/\(pathPass)/\(ep.id).\(ext)"
                     guard let streamURL = URL(string: streamUrlString) else { continue }
 

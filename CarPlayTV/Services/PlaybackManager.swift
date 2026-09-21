@@ -52,6 +52,7 @@ public final class PlaybackManager: ObservableObject {
     private var statusObserver: NSKeyValueObservation?
     private var externalPlaybackObserver: NSKeyValueObservation?
     private var bufferExpansionWorkItem: DispatchWorkItem?
+    private var hasRetriedWithAlternateFormat: Bool = false
     private var cancellables = Set<AnyCancellable>()
 
     private init() {
@@ -185,59 +186,111 @@ public final class PlaybackManager: ObservableObject {
         updateNowPlayingInfo()
     }
 
-    /// Pre-resolves stream URL by following redirects (HTTP 302/301) with User-Agent and probes alternate containers (.m3u8 <-> .mp4)
-    public func resolvePlayableURL(for url: URL) async -> URL {
-        let config = URLSessionConfiguration.ephemeral
-        config.timeoutIntervalForRequest = 4.0
-        let session = URLSession(configuration: config, delegate: InsecureSSLDelegate(), delegateQueue: nil)
+    /// Fast non-blocking URL delegate that cancels immediately on receiving HTTP headers (0 bytes of body downloaded)
+    private final class FastProbeDelegate: NSObject, URLSessionDataDelegate {
+        private let continuation: CheckedContinuation<URL?, Never>
+        private var didResume = false
 
-        // Probe helper: tests if URL responds with valid media status and returns final destination
-        func probe(_ testURL: URL) async -> URL? {
-            var req = URLRequest(url: testURL)
-            req.httpMethod = "GET"
+        init(continuation: CheckedContinuation<URL?, Never>) {
+            self.continuation = continuation
+        }
+
+        func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
+            completionHandler(.cancel)
+            guard !didResume else { return }
+            didResume = true
+
+            if let http = response as? HTTPURLResponse, (200...399).contains(http.statusCode) {
+                continuation.resume(returning: http.url ?? dataTask.originalRequest?.url)
+            } else {
+                continuation.resume(returning: nil)
+            }
+        }
+
+        func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+            guard !didResume else { return }
+            didResume = true
+            continuation.resume(returning: nil)
+        }
+    }
+
+    private func probeFast(_ url: URL, method: String, timeout: TimeInterval) async -> URL? {
+        await withCheckedContinuation { cont in
+            let delegate = FastProbeDelegate(continuation: cont)
+            let config = URLSessionConfiguration.ephemeral
+            config.timeoutIntervalForRequest = timeout
+            config.timeoutIntervalForResource = timeout
+            let session = URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
+
+            var req = URLRequest(url: url)
+            req.httpMethod = method
             req.setValue("bytes=0-1", forHTTPHeaderField: "Range")
             req.setValue(Self.defaultUserAgent, forHTTPHeaderField: "User-Agent")
             req.setValue("*/*", forHTTPHeaderField: "Accept")
 
-            if let (_, response) = try? await session.data(for: req),
-               let http = response as? HTTPURLResponse,
-               (200...299).contains(http.statusCode) || http.statusCode == 206 {
-                return http.url ?? testURL
+            let task = session.dataTask(with: req)
+            task.resume()
+
+            DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
+                task.cancel()
+                session.invalidateAndCancel()
             }
-            return nil
         }
+    }
 
-        // 1. Probe original URL
-        if let resolved = await probe(url) {
-            SanitizedLogger.info("Stream URL verified: \(URLSanitizer.sanitize(resolved))")
-            return resolved
+    private func probeStreamURL(_ url: URL) async -> URL? {
+        if let head = await probeFast(url, method: "HEAD", timeout: 1.0) {
+            return head
         }
+        return await probeFast(url, method: "GET", timeout: 1.2)
+    }
 
-        // 2. If original failed, probe alternate container formats (.m3u8 <-> .mp4 <-> .ts)
+    /// Derives alternate container format URL (.mp4 <-> .m3u8 <-> .ts)
+    public func alternateFormatURL(for url: URL) -> URL? {
         let urlStr = url.absoluteString
-        var alternateURLs: [URL] = []
-
         if urlStr.hasSuffix(".mp4") {
             let base = String(urlStr.dropLast(4))
-            if let u = URL(string: base + ".m3u8") { alternateURLs.append(u) }
-            if let u = URL(string: base + ".ts") { alternateURLs.append(u) }
+            return URL(string: base + ".m3u8")
         } else if urlStr.hasSuffix(".m3u8") {
             let base = String(urlStr.dropLast(5))
-            if let u = URL(string: base + ".mp4") { alternateURLs.append(u) }
+            return URL(string: base + ".mp4")
         } else if urlStr.hasSuffix(".mkv") {
             let base = String(urlStr.dropLast(4))
-            if let u = URL(string: base + ".mp4") { alternateURLs.append(u) }
-            if let u = URL(string: base + ".m3u8") { alternateURLs.append(u) }
+            return URL(string: base + ".m3u8") ?? URL(string: base + ".mp4")
+        }
+        return nil
+    }
+
+    /// Pre-resolves stream URL by following redirects (HTTP 302/301) with User-Agent and probes alternate containers (.m3u8 <-> .mp4)
+    public func resolvePlayableURL(for url: URL) async -> URL {
+        let urlStr = url.absoluteString
+        var candidateURLs: [URL] = []
+
+        // Prioritize .m3u8 (HLS) because HLS natively avoids missing 206 byte-range issues in Apple AVPlayer
+        if urlStr.hasSuffix(".mp4") {
+            let base = String(urlStr.dropLast(4))
+            if let u = URL(string: base + ".m3u8") { candidateURLs.append(u) }
+            candidateURLs.append(url)
+        } else if urlStr.hasSuffix(".mkv") {
+            let base = String(urlStr.dropLast(4))
+            if let u = URL(string: base + ".m3u8") { candidateURLs.append(u) }
+            if let u = URL(string: base + ".mp4") { candidateURLs.append(u) }
+            candidateURLs.append(url)
+        } else if urlStr.hasSuffix(".m3u8") {
+            candidateURLs.append(url)
+            let base = String(urlStr.dropLast(5))
+            if let u = URL(string: base + ".mp4") { candidateURLs.append(u) }
+        } else {
+            candidateURLs.append(url)
         }
 
-        for alt in alternateURLs {
-            if let resolved = await probe(alt) {
-                SanitizedLogger.info("Alternate stream URL resolved: \(URLSanitizer.sanitize(resolved))")
+        for candidate in candidateURLs {
+            if let resolved = await probeStreamURL(candidate) {
+                SanitizedLogger.info("Stream URL verified: \(URLSanitizer.sanitize(resolved))")
                 return resolved
             }
         }
 
-        // Return original URL as fallback for AVPlayer
         return url
     }
 
@@ -304,6 +357,18 @@ public final class PlaybackManager: ObservableObject {
                         self.player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero)
                     }
                 case .failed:
+                    // If VOD playback fails, automatically attempt seamless retry with alternate container (.m3u8 <-> .mp4)
+                    if let vod = self.currentVODItem, !self.hasRetriedWithAlternateFormat,
+                       let altURL = self.alternateFormatURL(for: vod.streamURL) {
+                        self.hasRetriedWithAlternateFormat = true
+                        SanitizedLogger.warning("VOD format failed (\(item.error?.localizedDescription ?? "unknown")), retrying with alternate format: \(URLSanitizer.sanitize(altURL))")
+                        var fallbackItem = vod
+                        fallbackItem.streamURL = altURL
+                        self.currentVODItem = fallbackItem
+                        self.playVOD(item: fallbackItem, startFromBeginning: false)
+                        return
+                    }
+
                     self.isBuffering = false
                     self.isPlaying = false
                     let msg = item.error?.localizedDescription ?? "Yayın oynatılamadı"

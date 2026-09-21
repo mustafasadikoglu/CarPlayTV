@@ -197,6 +197,7 @@ public struct XtreamVodStream: Codable, Identifiable {
 
     enum CodingKeys: String, CodingKey {
         case streamId = "stream_id"
+        case id
         case num
         case name
         case streamType = "stream_type"
@@ -228,10 +229,14 @@ public struct XtreamVodStream: Codable, Identifiable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        if let sId = try? container.decode(Int.self, forKey: .streamId) {
+        if let sId = try? container.decode(Int.self, forKey: .streamId), sId > 0 {
             self.streamId = sId
-        } else if let sStr = try? container.decode(String.self, forKey: .streamId), let sInt = Int(sStr) {
+        } else if let sStr = try? container.decode(String.self, forKey: .streamId), let sInt = Int(sStr), sInt > 0 {
             self.streamId = sInt
+        } else if let idInt = try? container.decode(Int.self, forKey: .id), idInt > 0 {
+            self.streamId = idInt
+        } else if let idStr = try? container.decode(String.self, forKey: .id), let idInt = Int(idStr), idInt > 0 {
+            self.streamId = idInt
         } else {
             self.streamId = 0
         }
@@ -267,7 +272,8 @@ public struct XtreamVodStream: Codable, Identifiable {
             self.categoryId = nil
         }
 
-        self.containerExtension = try? container.decode(String.self, forKey: .containerExtension)
+        var ext = (try? container.decode(String.self, forKey: .containerExtension))?.trimmingCharacters(in: CharacterSet(charactersIn: ". \t\r\n")) ?? "mp4"
+        self.containerExtension = ext.isEmpty ? "mp4" : ext
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -476,22 +482,24 @@ public struct XtreamEpisodeItem: Codable, Identifiable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        // Resilient ID decoding: check id, episode_id, stream_id (both as Int and String)
-        if let idInt = try? container.decode(Int.self, forKey: .id) {
-            self.id = String(idInt)
+        // Resilient ID decoding:
+        // Priority 1: stream_id or episode_id (which is always the actual server media stream ID)
+        // Priority 2: id (which in some panels is the stream ID, but in others is just episode index 1, 2...)
+        var resolvedId = ""
+        if let sIdInt = try? container.decode(Int.self, forKey: .streamId), sIdInt > 0 {
+            resolvedId = String(sIdInt)
+        } else if let sIdStr = try? container.decode(String.self, forKey: .streamId), !sIdStr.isEmpty && sIdStr != "0" {
+            resolvedId = sIdStr
+        } else if let epIdInt = try? container.decode(Int.self, forKey: .episodeId), epIdInt > 0 {
+            resolvedId = String(epIdInt)
+        } else if let epIdStr = try? container.decode(String.self, forKey: .episodeId), !epIdStr.isEmpty && epIdStr != "0" {
+            resolvedId = epIdStr
+        } else if let idInt = try? container.decode(Int.self, forKey: .id), idInt > 0 {
+            resolvedId = String(idInt)
         } else if let idStr = try? container.decode(String.self, forKey: .id), !idStr.isEmpty {
-            self.id = idStr
-        } else if let epIdInt = try? container.decode(Int.self, forKey: .episodeId) {
-            self.id = String(epIdInt)
-        } else if let epIdStr = try? container.decode(String.self, forKey: .episodeId), !epIdStr.isEmpty {
-            self.id = epIdStr
-        } else if let sIdInt = try? container.decode(Int.self, forKey: .streamId) {
-            self.id = String(sIdInt)
-        } else if let sIdStr = try? container.decode(String.self, forKey: .streamId), !sIdStr.isEmpty {
-            self.id = sIdStr
-        } else {
-            self.id = ""
+            resolvedId = idStr
         }
+        self.id = resolvedId
 
         if let epInt = try? container.decode(Int.self, forKey: .episodeNum) {
             self.episodeNum = epInt
@@ -502,7 +510,8 @@ public struct XtreamEpisodeItem: Codable, Identifiable {
         }
 
         self.title = (try? container.decode(String.self, forKey: .title)) ?? "\(self.episodeNum). Bölüm"
-        self.containerExtension = try? container.decode(String.self, forKey: .containerExtension)
+        var ext = (try? container.decode(String.self, forKey: .containerExtension))?.trimmingCharacters(in: CharacterSet(charactersIn: ". \t\r\n")) ?? "mp4"
+        self.containerExtension = ext.isEmpty ? "mp4" : ext
 
         if let sInt = try? container.decode(Int.self, forKey: .season) {
             self.season = sInt
