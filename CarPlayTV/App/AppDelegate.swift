@@ -8,6 +8,7 @@ public class AppDelegate: UIResponder, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         // Initialize singletons
+        _ = NetworkMonitor.shared
         _ = PlaybackManager.shared
         _ = PlaylistStore.shared
         _ = VODStore.shared

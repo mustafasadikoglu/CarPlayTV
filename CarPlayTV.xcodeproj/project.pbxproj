@@ -18,6 +18,7 @@
 		1A2B3C4D5E6F1A2273FB0000 /* PlaybackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F4AF1DE130000 /* PlaybackManager.swift */; };
 		1A2B3C4D5E6F6351AAE20000 /* PlaylistStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F71CF28700000 /* PlaylistStore.swift */; };
 		1A2B3C4D5E6F32CE21130000 /* VODStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F1C63A09F0000 /* VODStore.swift */; };
+		1A2B3C4D5E6F64E4B1630000 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F2616E5950000 /* NetworkMonitor.swift */; };
 		1A2B3C4D5E6F1FE7BC940000 /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F5F4857A20000 /* CarPlaySceneDelegate.swift */; };
 		1A2B3C4D5E6F231419650000 /* CarPlayInterfaceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F2807C8CD0000 /* CarPlayInterfaceManager.swift */; };
 		1A2B3C4D5E6F34B7A5D60000 /* CarPlayVideoWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F359C07380000 /* CarPlayVideoWindowController.swift */; };
@@ -38,6 +39,7 @@
 		1A2B3C4D5E6F133590090000 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F5786C84E0000 /* AVFoundation.framework */; };
 		1A2B3C4D5E6F3794A1F20000 /* AVKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F6378B9690000 /* AVKit.framework */; };
 		1A2B3C4D5E6F2943126A0000 /* MediaPlayer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F2B773D850000 /* MediaPlayer.framework */; };
+		1A2B3C4D5E6F22839D1F0000 /* Network.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F155FAC840000 /* Network.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -53,6 +55,7 @@
 		1A2B3C4D5E6F4AF1DE130000 /* PlaybackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "PlaybackManager.swift"; path = "CarPlayTV/Services/PlaybackManager.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F71CF28700000 /* PlaylistStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "PlaylistStore.swift"; path = "CarPlayTV/Services/PlaylistStore.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F1C63A09F0000 /* VODStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "VODStore.swift"; path = "CarPlayTV/Services/VODStore.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F2616E5950000 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "NetworkMonitor.swift"; path = "CarPlayTV/Services/NetworkMonitor.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F5F4857A20000 /* CarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CarPlaySceneDelegate.swift"; path = "CarPlayTV/CarPlay/CarPlaySceneDelegate.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F2807C8CD0000 /* CarPlayInterfaceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CarPlayInterfaceManager.swift"; path = "CarPlayTV/CarPlay/CarPlayInterfaceManager.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F359C07380000 /* CarPlayVideoWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CarPlayVideoWindowController.swift"; path = "CarPlayTV/CarPlay/CarPlayVideoWindowController.swift"; sourceTree = SOURCE_ROOT; };
@@ -75,6 +78,7 @@
 		1A2B3C4D5E6F5786C84E0000 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = "AVFoundation.framework"; path = "System/Library/Frameworks/AVFoundation.framework"; sourceTree = SDKROOT; };
 		1A2B3C4D5E6F6378B9690000 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = "AVKit.framework"; path = "System/Library/Frameworks/AVKit.framework"; sourceTree = SDKROOT; };
 		1A2B3C4D5E6F2B773D850000 /* MediaPlayer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = "MediaPlayer.framework"; path = "System/Library/Frameworks/MediaPlayer.framework"; sourceTree = SDKROOT; };
+		1A2B3C4D5E6F155FAC840000 /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = "Network.framework"; path = "System/Library/Frameworks/Network.framework"; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -86,6 +90,7 @@
 				1A2B3C4D5E6F133590090000 /* AVFoundation.framework in Frameworks */,
 				1A2B3C4D5E6F3794A1F20000 /* AVKit.framework in Frameworks */,
 				1A2B3C4D5E6F2943126A0000 /* MediaPlayer.framework in Frameworks */,
+				1A2B3C4D5E6F22839D1F0000 /* Network.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -116,6 +121,7 @@
 				1A2B3C4D5E6F5786C84E0000 /* AVFoundation.framework */,
 				1A2B3C4D5E6F6378B9690000 /* AVKit.framework */,
 				1A2B3C4D5E6F2B773D850000 /* MediaPlayer.framework */,
+				1A2B3C4D5E6F155FAC840000 /* Network.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -134,6 +140,7 @@
 				1A2B3C4D5E6F4AF1DE130000 /* PlaybackManager.swift */,
 				1A2B3C4D5E6F71CF28700000 /* PlaylistStore.swift */,
 				1A2B3C4D5E6F1C63A09F0000 /* VODStore.swift */,
+				1A2B3C4D5E6F2616E5950000 /* NetworkMonitor.swift */,
 				1A2B3C4D5E6F5F4857A20000 /* CarPlaySceneDelegate.swift */,
 				1A2B3C4D5E6F2807C8CD0000 /* CarPlayInterfaceManager.swift */,
 				1A2B3C4D5E6F359C07380000 /* CarPlayVideoWindowController.swift */,
@@ -236,6 +243,7 @@
 				1A2B3C4D5E6F1A2273FB0000 /* PlaybackManager.swift in Sources */,
 				1A2B3C4D5E6F6351AAE20000 /* PlaylistStore.swift in Sources */,
 				1A2B3C4D5E6F32CE21130000 /* VODStore.swift in Sources */,
+				1A2B3C4D5E6F64E4B1630000 /* NetworkMonitor.swift in Sources */,
 				1A2B3C4D5E6F1FE7BC940000 /* CarPlaySceneDelegate.swift in Sources */,
 				1A2B3C4D5E6F231419650000 /* CarPlayInterfaceManager.swift in Sources */,
 				1A2B3C4D5E6F34B7A5D60000 /* CarPlayVideoWindowController.swift in Sources */,

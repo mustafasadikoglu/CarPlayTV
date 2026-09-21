@@ -25,6 +25,7 @@ const files = [
     { name: "PlaybackManager.swift", path: "CarPlayTV/Services/PlaybackManager.swift", isSource: true },
     { name: "PlaylistStore.swift", path: "CarPlayTV/Services/PlaylistStore.swift", isSource: true },
     { name: "VODStore.swift", path: "CarPlayTV/Services/VODStore.swift", isSource: true },
+    { name: "NetworkMonitor.swift", path: "CarPlayTV/Services/NetworkMonitor.swift", isSource: true },
     { name: "CarPlaySceneDelegate.swift", path: "CarPlayTV/CarPlay/CarPlaySceneDelegate.swift", isSource: true },
     { name: "CarPlayInterfaceManager.swift", path: "CarPlayTV/CarPlay/CarPlayInterfaceManager.swift", isSource: true },
     { name: "CarPlayVideoWindowController.swift", path: "CarPlayTV/CarPlay/CarPlayVideoWindowController.swift", isSource: true },
@@ -49,7 +50,8 @@ const frameworks = [
     "CarPlay.framework",
     "AVFoundation.framework",
     "AVKit.framework",
-    "MediaPlayer.framework"
+    "MediaPlayer.framework",
+    "Network.framework"
 ];
 
 for (const f of files) {

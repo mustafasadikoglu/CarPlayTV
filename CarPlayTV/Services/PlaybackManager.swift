@@ -46,6 +46,7 @@ public final class PlaybackManager: ObservableObject {
     private var timeObserverToken: Any?
     private var statusObserver: NSKeyValueObservation?
     private var externalPlaybackObserver: NSKeyValueObservation?
+    private var bufferExpansionWorkItem: DispatchWorkItem?
     private var cancellables = Set<AnyCancellable>()
 
     private init() {
@@ -54,9 +55,9 @@ public final class PlaybackManager: ObservableObject {
         setupRemoteCommands()
         setupPlayerObservers()
         setupTimeObserver()
+        _ = NetworkMonitor.shared
         loadSavedSettings()
     }
-
 
     // MARK: - Audio Session
     private func setupAudioSession() {
@@ -96,6 +97,13 @@ public final class PlaybackManager: ObservableObject {
             name: .AVPlayerItemFailedToPlayToEndTime,
             object: nil
         )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleNetworkRestored),
+            name: .networkRestored,
+            object: nil
+        )
     }
 
     private func setupTimeObserver() {
@@ -124,6 +132,12 @@ public final class PlaybackManager: ObservableObject {
 
     // MARK: - Playback Control
     public func play(channel: Channel) {
+        // Fast Zapping: Cancel previous downloads and reset work item
+        bufferExpansionWorkItem?.cancel()
+        bufferExpansionWorkItem = nil
+        (player.currentItem?.asset as? AVURLAsset)?.cancelLoading()
+        player.replaceCurrentItem(with: nil)
+
         self.isLiveStream = true
         self.currentChannel = channel
         self.currentVODItem = nil
@@ -144,7 +158,9 @@ public final class PlaybackManager: ObservableObject {
         }
 
         let playerItem = AVPlayerItem(asset: asset)
-        playerItem.preferredForwardBufferDuration = 5.0 // Low latency for in-car live streams
+        // Stage 1: Ultra fast startup buffer (< 1s latency)
+        playerItem.preferredForwardBufferDuration = 1.0
+        playerItem.automaticallyPreservesTimeOffsetFromLive = true
         playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = false
 
         observePlayerItem(playerItem)
@@ -153,10 +169,23 @@ public final class PlaybackManager: ObservableObject {
         player.play()
         self.isPlaying = true
 
+        // Stage 2: Smoothly expand buffer to 6.0s after 4.0s for in-car cellular driving stability
+        let expansionItem = DispatchWorkItem { [weak playerItem] in
+            playerItem?.preferredForwardBufferDuration = 6.0
+            print("CarPlayTV: Fast zapping complete. Buffer expanded to 6.0s for driving stability.")
+        }
+        self.bufferExpansionWorkItem = expansionItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0, execute: expansionItem)
+
         updateNowPlayingInfo()
     }
 
     public func playVOD(item: VODItem, startFromBeginning: Bool = false) {
+        bufferExpansionWorkItem?.cancel()
+        bufferExpansionWorkItem = nil
+        (player.currentItem?.asset as? AVURLAsset)?.cancelLoading()
+        player.replaceCurrentItem(with: nil)
+
         self.isLiveStream = false
         self.currentVODItem = item
         self.currentChannel = nil
@@ -166,6 +195,7 @@ public final class PlaybackManager: ObservableObject {
         self.playbackError = nil
 
         let playerItem = AVPlayerItem(url: item.streamURL)
+        playerItem.preferredForwardBufferDuration = 2.0
         observePlayerItem(playerItem)
 
         player.replaceCurrentItem(with: playerItem)
@@ -289,6 +319,19 @@ public final class PlaybackManager: ObservableObject {
             }
         }
     }
+
+    @objc private func handleNetworkRestored() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            print("CarPlayTV: Network restored. Auto-recovering playback...")
+            if let channel = self.currentChannel, (!self.isPlaying || self.playbackError != nil) {
+                self.play(channel: channel)
+            } else if let vod = self.currentVODItem, (!self.isPlaying || self.playbackError != nil) {
+                self.playVOD(item: vod, startFromBeginning: false)
+            }
+        }
+    }
+
 
     // MARK: - Now Playing Info & Remote Command Center
     private func updateNowPlayingInfo() {
