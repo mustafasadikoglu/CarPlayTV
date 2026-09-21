@@ -16,6 +16,16 @@ final class InsecureSSLDelegate: NSObject, URLSessionDelegate, URLSessionTaskDel
     }
 }
 
+/// Helper wrapper allowing array decoding to skip corrupted elements rather than failing the whole payload
+public struct LossyDecodable<T: Decodable>: Decodable {
+    public let value: T?
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        self.value = try? container.decode(T.self)
+    }
+}
+
 public final class XtreamCodesClient {
     public static let shared = XtreamCodesClient()
 
@@ -57,6 +67,17 @@ public final class XtreamCodesClient {
 
     private func encoded(_ string: String) -> String {
         return string.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? string
+    }
+
+    private func decodeResilient<T: Decodable>(_ type: T.Type, from data: Data) -> [T] {
+        let decoder = JSONDecoder()
+        if let direct = try? decoder.decode([T].self, from: data) {
+            return direct
+        }
+        if let lossy = try? decoder.decode([LossyDecodable<T>].self, from: data) {
+            return lossy.compactMap { $0.value }
+        }
+        return []
     }
 
     // MARK: - Secure Keychain Storage
@@ -105,6 +126,7 @@ public final class XtreamCodesClient {
         return auth
     }
 
+    // MARK: - Live TV & Category Methods
     public func fetchLiveCategories(server: String, username: String, password: String) async throws -> [XtreamCategory] {
         let cleanBase = cleanServerURL(server)
         let encUser = encoded(username)
@@ -118,14 +140,21 @@ public final class XtreamCodesClient {
             throw URLError(.badServerResponse)
         }
 
-        let decoder = JSONDecoder()
-        return try decoder.decode([XtreamCategory].self, from: data)
+        return decodeResilient(XtreamCategory.self, from: data)
     }
 
     public func fetchLiveStreams(server: String, username: String, password: String, categoryId: String? = nil) async throws -> [Channel] {
         let cleanBase = cleanServerURL(server)
         let encUser = encoded(username)
         let encPass = encoded(password)
+
+        // 1. Fetch categories to map ID ("1", "42") to actual human-readable category name ("Ulusal", "Spor")
+        let categories = (try? await fetchLiveCategories(server: server, username: username, password: password)) ?? []
+        var categoryMap: [String: String] = [:]
+        for cat in categories {
+            categoryMap[cat.categoryId] = cat.categoryName
+        }
+
         var urlString = "\(cleanBase)/player_api.php?username=\(encUser)&password=\(encPass)&action=get_live_streams"
         if let catId = categoryId {
             urlString += "&category_id=\(catId)"
@@ -140,22 +169,22 @@ public final class XtreamCodesClient {
             throw URLError(.badServerResponse)
         }
 
-        let decoder = JSONDecoder()
-        let streams = try decoder.decode([XtreamLiveStream].self, from: data)
+        let streams = decodeResilient(XtreamLiveStream.self, from: data)
 
-        // Convert XtreamLiveStream to uniform Channel model
+        // Convert XtreamLiveStream to uniform Channel model with mapped category names
         return streams.compactMap { stream -> Channel? in
             let streamUrlString = "\(cleanBase)/live/\(username)/\(password)/\(stream.streamId).m3u8"
             guard let streamURL = URL(string: streamUrlString) else { return nil }
 
             let logoURL = stream.streamIcon.flatMap { URL(string: $0) }
+            let groupName = stream.categoryId.flatMap { categoryMap[$0] } ?? "Genel"
 
             return Channel(
                 id: "\(stream.streamId)",
                 name: stream.name,
                 streamURL: streamURL,
                 logoURL: logoURL,
-                groupTitle: stream.categoryId ?? "Genel",
+                groupTitle: groupName,
                 tvgId: stream.epgChannelId,
                 tvgName: stream.name,
                 isFavorite: false
@@ -177,13 +206,21 @@ public final class XtreamCodesClient {
             throw URLError(.badServerResponse)
         }
 
-        return try JSONDecoder().decode([XtreamCategory].self, from: data)
+        return decodeResilient(XtreamCategory.self, from: data)
     }
 
     public func fetchVodStreams(server: String, username: String, password: String, categoryId: String? = nil) async throws -> [VODItem] {
         let cleanBase = cleanServerURL(server)
         let encUser = encoded(username)
         let encPass = encoded(password)
+
+        // Fetch categories to map ID to actual category name
+        let categories = (try? await fetchVodCategories(server: server, username: username, password: password)) ?? []
+        var vodCatMap: [String: String] = [:]
+        for cat in categories {
+            vodCatMap[cat.categoryId] = cat.categoryName
+        }
+
         var urlString = "\(cleanBase)/player_api.php?username=\(encUser)&password=\(encPass)&action=get_vod_streams"
         if let catId = categoryId {
             urlString += "&category_id=\(catId)"
@@ -198,7 +235,7 @@ public final class XtreamCodesClient {
             throw URLError(.badServerResponse)
         }
 
-        let vodStreams = try JSONDecoder().decode([XtreamVodStream].self, from: data)
+        let vodStreams = decodeResilient(XtreamVodStream.self, from: data)
 
         return vodStreams.compactMap { stream -> VODItem? in
             let ext = stream.containerExtension ?? "mp4"
@@ -207,6 +244,7 @@ public final class XtreamCodesClient {
 
             let poster = stream.streamIcon.flatMap { URL(string: $0) }
             let ratingVal = stream.rating.flatMap { Double($0) }
+            let categoryName = stream.categoryId.flatMap { vodCatMap[$0] } ?? "Filmler"
 
             return VODItem(
                 id: "vod_\(stream.streamId)",
@@ -215,7 +253,7 @@ public final class XtreamCodesClient {
                 posterURL: poster,
                 backdropURL: poster,
                 rating: ratingVal,
-                categoryName: stream.categoryId ?? "Filmler",
+                categoryName: categoryName,
                 type: .movie
             )
         }
@@ -235,13 +273,21 @@ public final class XtreamCodesClient {
             throw URLError(.badServerResponse)
         }
 
-        return try JSONDecoder().decode([XtreamCategory].self, from: data)
+        return decodeResilient(XtreamCategory.self, from: data)
     }
 
     public func fetchSeries(server: String, username: String, password: String, categoryId: String? = nil) async throws -> [Series] {
         let cleanBase = cleanServerURL(server)
         let encUser = encoded(username)
         let encPass = encoded(password)
+
+        // Fetch categories to map ID to actual category name
+        let categories = (try? await fetchSeriesCategories(server: server, username: username, password: password)) ?? []
+        var seriesCatMap: [String: String] = [:]
+        for cat in categories {
+            seriesCatMap[cat.categoryId] = cat.categoryName
+        }
+
         var urlString = "\(cleanBase)/player_api.php?username=\(encUser)&password=\(encPass)&action=get_series"
         if let catId = categoryId {
             urlString += "&category_id=\(catId)"
@@ -256,11 +302,12 @@ public final class XtreamCodesClient {
             throw URLError(.badServerResponse)
         }
 
-        let seriesItems = try JSONDecoder().decode([XtreamSeriesItem].self, from: data)
+        let seriesItems = decodeResilient(XtreamSeriesItem.self, from: data)
 
         return seriesItems.map { item in
             let cover = item.cover.flatMap { URL(string: $0) }
             let ratingVal = item.rating.flatMap { Double($0) }
+            let categoryName = item.categoryId.flatMap { seriesCatMap[$0] } ?? "Diziler"
 
             return Series(
                 id: "series_\(item.seriesId)",
@@ -271,7 +318,7 @@ public final class XtreamCodesClient {
                 year: item.releaseDate,
                 genre: item.genre,
                 plot: item.plot,
-                categoryName: item.categoryId ?? "Diziler"
+                categoryName: categoryName
             )
         }
     }

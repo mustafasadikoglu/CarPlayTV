@@ -26,6 +26,47 @@ public struct XtreamUserInfo: Codable {
         case activeCons = "active_cons"
         case maxCons = "max_connections"
     }
+
+    public init(
+        username: String? = nil,
+        status: String? = nil,
+        expDate: String? = nil,
+        isTrial: String? = nil,
+        activeCons: String? = nil,
+        maxCons: String? = nil
+    ) {
+        self.username = username
+        self.status = status
+        self.expDate = expDate
+        self.isTrial = isTrial
+        self.activeCons = activeCons
+        self.maxCons = maxCons
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.username = try? container.decode(String.self, forKey: .username)
+        self.status = try? container.decode(String.self, forKey: .status)
+
+        if let expStr = try? container.decode(String.self, forKey: .expDate) {
+            self.expDate = expStr
+        } else if let expInt = try? container.decode(Int.self, forKey: .expDate) {
+            self.expDate = String(expInt)
+        } else {
+            self.expDate = nil
+        }
+
+        self.isTrial = try? container.decode(String.self, forKey: .isTrial)
+        self.activeCons = try? container.decode(String.self, forKey: .activeCons)
+
+        if let mcStr = try? container.decode(String.self, forKey: .maxCons) {
+            self.maxCons = mcStr
+        } else if let mcInt = try? container.decode(Int.self, forKey: .maxCons) {
+            self.maxCons = String(mcInt)
+        } else {
+            self.maxCons = nil
+        }
+    }
 }
 
 public struct XtreamServerInfo: Codable {
@@ -53,6 +94,23 @@ public struct XtreamCategory: Codable, Identifiable {
         case categoryId = "category_id"
         case categoryName = "category_name"
     }
+
+    public init(categoryId: String, categoryName: String) {
+        self.categoryId = categoryId
+        self.categoryName = categoryName
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let idStr = try? container.decode(String.self, forKey: .categoryId) {
+            self.categoryId = idStr
+        } else if let idInt = try? container.decode(Int.self, forKey: .categoryId) {
+            self.categoryId = String(idInt)
+        } else {
+            self.categoryId = UUID().uuidString
+        }
+        self.categoryName = (try? container.decode(String.self, forKey: .categoryName)) ?? "Genel"
+    }
 }
 
 public struct XtreamLiveStream: Codable, Identifiable {
@@ -73,6 +131,56 @@ public struct XtreamLiveStream: Codable, Identifiable {
         case streamIcon = "stream_icon"
         case epgChannelId = "epg_channel_id"
         case categoryId = "category_id"
+    }
+
+    public init(
+        streamId: Int,
+        num: Int? = nil,
+        name: String,
+        streamType: String? = nil,
+        streamIcon: String? = nil,
+        epgChannelId: String? = nil,
+        categoryId: String? = nil
+    ) {
+        self.streamId = streamId
+        self.num = num
+        self.name = name
+        self.streamType = streamType
+        self.streamIcon = streamIcon
+        self.epgChannelId = epgChannelId
+        self.categoryId = categoryId
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let sId = try? container.decode(Int.self, forKey: .streamId) {
+            self.streamId = sId
+        } else if let sStr = try? container.decode(String.self, forKey: .streamId), let sInt = Int(sStr) {
+            self.streamId = sInt
+        } else {
+            self.streamId = 0
+        }
+
+        if let n = try? container.decode(Int.self, forKey: .num) {
+            self.num = n
+        } else if let nStr = try? container.decode(String.self, forKey: .num) {
+            self.num = Int(nStr)
+        } else {
+            self.num = nil
+        }
+
+        self.name = (try? container.decode(String.self, forKey: .name)) ?? "Kanal"
+        self.streamType = try? container.decode(String.self, forKey: .streamType)
+        self.streamIcon = try? container.decode(String.self, forKey: .streamIcon)
+        self.epgChannelId = try? container.decode(String.self, forKey: .epgChannelId)
+
+        if let catStr = try? container.decode(String.self, forKey: .categoryId) {
+            self.categoryId = catStr
+        } else if let catInt = try? container.decode(Int.self, forKey: .categoryId) {
+            self.categoryId = String(catInt)
+        } else {
+            self.categoryId = nil
+        }
     }
 }
 
@@ -96,6 +204,70 @@ public struct XtreamVodStream: Codable, Identifiable {
         case rating
         case categoryId = "category_id"
         case containerExtension = "container_extension"
+    }
+
+    public init(
+        streamId: Int,
+        num: Int? = nil,
+        name: String,
+        streamType: String? = nil,
+        streamIcon: String? = nil,
+        rating: String? = nil,
+        categoryId: String? = nil,
+        containerExtension: String? = nil
+    ) {
+        self.streamId = streamId
+        self.num = num
+        self.name = name
+        self.streamType = streamType
+        self.streamIcon = streamIcon
+        self.rating = rating
+        self.categoryId = categoryId
+        self.containerExtension = containerExtension
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let sId = try? container.decode(Int.self, forKey: .streamId) {
+            self.streamId = sId
+        } else if let sStr = try? container.decode(String.self, forKey: .streamId), let sInt = Int(sStr) {
+            self.streamId = sInt
+        } else {
+            self.streamId = 0
+        }
+
+        if let n = try? container.decode(Int.self, forKey: .num) {
+            self.num = n
+        } else if let nStr = try? container.decode(String.self, forKey: .num) {
+            self.num = Int(nStr)
+        } else {
+            self.num = nil
+        }
+
+        self.name = (try? container.decode(String.self, forKey: .name)) ?? "Film"
+        self.streamType = try? container.decode(String.self, forKey: .streamType)
+        self.streamIcon = try? container.decode(String.self, forKey: .streamIcon)
+
+        // Rating can be String, Double, or Int in JSON
+        if let rStr = try? container.decode(String.self, forKey: .rating) {
+            self.rating = rStr
+        } else if let rDbl = try? container.decode(Double.self, forKey: .rating) {
+            self.rating = String(format: "%.1f", rDbl)
+        } else if let rInt = try? container.decode(Int.self, forKey: .rating) {
+            self.rating = String(rInt)
+        } else {
+            self.rating = nil
+        }
+
+        if let catStr = try? container.decode(String.self, forKey: .categoryId) {
+            self.categoryId = catStr
+        } else if let catInt = try? container.decode(Int.self, forKey: .categoryId) {
+            self.categoryId = String(catInt)
+        } else {
+            self.categoryId = nil
+        }
+
+        self.containerExtension = try? container.decode(String.self, forKey: .containerExtension)
     }
 }
 
@@ -123,8 +295,84 @@ public struct XtreamSeriesItem: Codable, Identifiable {
         case director
         case genre
         case releaseDate = "releaseDate"
+        case releaseDateSnake = "release_date"
         case rating
         case categoryId = "category_id"
     }
-}
 
+    public init(
+        seriesId: Int,
+        num: Int? = nil,
+        name: String,
+        cover: String? = nil,
+        plot: String? = nil,
+        cast: String? = nil,
+        director: String? = nil,
+        genre: String? = nil,
+        releaseDate: String? = nil,
+        rating: String? = nil,
+        categoryId: String? = nil
+    ) {
+        self.seriesId = seriesId
+        self.num = num
+        self.name = name
+        self.cover = cover
+        self.plot = plot
+        self.cast = cast
+        self.director = director
+        self.genre = genre
+        self.releaseDate = releaseDate
+        self.rating = rating
+        self.categoryId = categoryId
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let sId = try? container.decode(Int.self, forKey: .seriesId) {
+            self.seriesId = sId
+        } else if let sStr = try? container.decode(String.self, forKey: .seriesId), let sInt = Int(sStr) {
+            self.seriesId = sInt
+        } else {
+            self.seriesId = 0
+        }
+
+        if let n = try? container.decode(Int.self, forKey: .num) {
+            self.num = n
+        } else if let nStr = try? container.decode(String.self, forKey: .num) {
+            self.num = Int(nStr)
+        } else {
+            self.num = nil
+        }
+
+        self.name = (try? container.decode(String.self, forKey: .name)) ?? "Dizi"
+        self.cover = try? container.decode(String.self, forKey: .cover)
+        self.plot = try? container.decode(String.self, forKey: .plot)
+        self.cast = try? container.decode(String.self, forKey: .cast)
+        self.director = try? container.decode(String.self, forKey: .director)
+        self.genre = try? container.decode(String.self, forKey: .genre)
+
+        if let rd = try? container.decode(String.self, forKey: .releaseDate) {
+            self.releaseDate = rd
+        } else {
+            self.releaseDate = try? container.decode(String.self, forKey: .releaseDateSnake)
+        }
+
+        if let rStr = try? container.decode(String.self, forKey: .rating) {
+            self.rating = rStr
+        } else if let rDbl = try? container.decode(Double.self, forKey: .rating) {
+            self.rating = String(format: "%.1f", rDbl)
+        } else if let rInt = try? container.decode(Int.self, forKey: .rating) {
+            self.rating = String(rInt)
+        } else {
+            self.rating = nil
+        }
+
+        if let catStr = try? container.decode(String.self, forKey: .categoryId) {
+            self.categoryId = catStr
+        } else if let catInt = try? container.decode(Int.self, forKey: .categoryId) {
+            self.categoryId = String(catInt)
+        } else {
+            self.categoryId = nil
+        }
+    }
+}

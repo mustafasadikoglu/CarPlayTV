@@ -28,6 +28,17 @@ public final class XtreamAccountStore: ObservableObject {
 
     public init() {
         loadAccountsFromDisk()
+        if let active = activeAccount {
+            let loadedChannels = loadAccountChannels(accountId: active.id)
+            let loadedVOD = loadAccountVOD(accountId: active.id)
+            let loadedSeries = loadAccountSeries(accountId: active.id)
+            if !loadedChannels.isEmpty {
+                PlaylistStore.shared.setChannels(loadedChannels)
+            }
+            if !loadedVOD.isEmpty || !loadedSeries.isEmpty {
+                VODStore.shared.setLibrary(movies: loadedVOD, series: loadedSeries)
+            }
+        }
     }
 
     // MARK: - Account CRUD Operations
@@ -55,12 +66,27 @@ public final class XtreamAccountStore: ObservableObject {
                 expDateString = "Süresiz / Belirsiz"
             }
 
-            // 2. Fetch live and VOD counts
+            // 2. Fetch live, VOD and series
             await MainActor.run { self.syncProgressText = "Kanal listesi çekiliyor..." }
             let liveStreams = try await XtreamCodesClient.shared.fetchLiveStreams(server: server, username: user, password: pass)
 
             await MainActor.run { self.syncProgressText = "VOD film listesi çekiliyor..." }
-            let vodStreams = (try? await XtreamCodesClient.shared.fetchVodStreams(server: server, username: user, password: pass)) ?? []
+            let vodStreams: [VODItem]
+            do {
+                vodStreams = try await XtreamCodesClient.shared.fetchVodStreams(server: server, username: user, password: pass)
+            } catch {
+                SanitizedLogger.warning("VOD filmleri çekilemedi: \(error.localizedDescription)")
+                vodStreams = []
+            }
+
+            await MainActor.run { self.syncProgressText = "Dizi listesi çekiliyor..." }
+            let seriesStreams: [Series]
+            do {
+                seriesStreams = try await XtreamCodesClient.shared.fetchSeries(server: server, username: user, password: pass)
+            } catch {
+                SanitizedLogger.warning("Diziler çekilemedi: \(error.localizedDescription)")
+                seriesStreams = []
+            }
 
             // 3. Create account model
             let isFirstAccount = accounts.isEmpty
@@ -71,7 +97,7 @@ public final class XtreamAccountStore: ObservableObject {
                 isActive: isFirstAccount,
                 channelCount: liveStreams.count,
                 vodCount: vodStreams.count,
-                seriesCount: 0,
+                seriesCount: seriesStreams.count,
                 status: auth.userInfo?.status ?? "Active",
                 expirationDate: expDateString,
                 maxConnections: auth.userInfo?.maxCons,
@@ -81,21 +107,22 @@ public final class XtreamAccountStore: ObservableObject {
             // 4. Save password securely to Keychain
             KeychainHelper.shared.saveString(key: "xtream_acc_pass_\(newAccount.id)", value: pass)
 
-            // 5. Cache channels & VOD to disk for this account
+            // 5. Cache channels, VOD & series to disk for this account
             saveAccountChannels(accountId: newAccount.id, channels: liveStreams)
             saveAccountVOD(accountId: newAccount.id, movies: vodStreams)
+            saveAccountSeries(accountId: newAccount.id, series: seriesStreams)
 
             await MainActor.run {
                 self.accounts.append(newAccount)
                 if isFirstAccount {
                     self.activeAccount = newAccount
                     PlaylistStore.shared.setChannels(liveStreams)
-                    VODStore.shared.setMovies(vodStreams)
+                    VODStore.shared.setLibrary(movies: vodStreams, series: seriesStreams)
                 }
                 self.saveAccountsToDisk()
                 self.isSyncing = false
                 self.syncProgressText = nil
-                SanitizedLogger.info("Yeni Xtream hesabı eklendi: \(name) (\(liveStreams.count) kanal, \(vodStreams.count) film)")
+                SanitizedLogger.info("Yeni Xtream hesabı eklendi: \(name) (\(liveStreams.count) kanal, \(vodStreams.count) film, \(seriesStreams.count) dizi)")
             }
 
             return newAccount
@@ -189,11 +216,29 @@ public final class XtreamAccountStore: ObservableObject {
                 password: pass
             )
 
-            let vodStreams = (try? await XtreamCodesClient.shared.fetchVodStreams(
-                server: account.server,
-                username: account.username,
-                password: pass
-            )) ?? []
+            let vodStreams: [VODItem]
+            do {
+                vodStreams = try await XtreamCodesClient.shared.fetchVodStreams(
+                    server: account.server,
+                    username: account.username,
+                    password: pass
+                )
+            } catch {
+                SanitizedLogger.warning("VOD filmleri senkronize edilemedi: \(error.localizedDescription)")
+                vodStreams = []
+            }
+
+            let seriesStreams: [Series]
+            do {
+                seriesStreams = try await XtreamCodesClient.shared.fetchSeries(
+                    server: account.server,
+                    username: account.username,
+                    password: pass
+                )
+            } catch {
+                SanitizedLogger.warning("Diziler senkronize edilemedi: \(error.localizedDescription)")
+                seriesStreams = []
+            }
 
             let expDateString: String?
             if let expTs = auth.userInfo?.expDate.flatMap({ Double($0) }), expTs > 0 {
@@ -207,11 +252,13 @@ public final class XtreamAccountStore: ObservableObject {
 
             saveAccountChannels(accountId: account.id, channels: liveStreams)
             saveAccountVOD(accountId: account.id, movies: vodStreams)
+            saveAccountSeries(accountId: account.id, series: seriesStreams)
 
             await MainActor.run {
                 if let idx = self.accounts.firstIndex(where: { $0.id == account.id }) {
                     self.accounts[idx].channelCount = liveStreams.count
                     self.accounts[idx].vodCount = vodStreams.count
+                    self.accounts[idx].seriesCount = seriesStreams.count
                     self.accounts[idx].expirationDate = expDateString
                     self.accounts[idx].status = auth.userInfo?.status ?? "Active"
                     self.accounts[idx].maxConnections = auth.userInfo?.maxCons
@@ -220,7 +267,7 @@ public final class XtreamAccountStore: ObservableObject {
                     if self.activeAccount?.id == account.id {
                         self.activeAccount = self.accounts[idx]
                         PlaylistStore.shared.setChannels(liveStreams)
-                        VODStore.shared.setMovies(vodStreams)
+                        VODStore.shared.setLibrary(movies: vodStreams, series: seriesStreams)
                     }
                 }
 
@@ -250,12 +297,13 @@ public final class XtreamAccountStore: ObservableObject {
         self.activeAccount = account
         saveAccountsToDisk()
 
-        // Load cached channels & VOD for the activated account
+        // Load cached channels, VOD & series for the activated account
         let loadedChannels = loadAccountChannels(accountId: account.id)
         let loadedVOD = loadAccountVOD(accountId: account.id)
+        let loadedSeries = loadAccountSeries(accountId: account.id)
 
         PlaylistStore.shared.setChannels(loadedChannels)
-        VODStore.shared.setMovies(loadedVOD)
+        VODStore.shared.setLibrary(movies: loadedVOD, series: loadedSeries)
 
         SanitizedLogger.info("Aktif hesap değiştirildi: \(account.name)")
 
@@ -302,6 +350,10 @@ public final class XtreamAccountStore: ObservableObject {
         storageDirectory.appendingPathComponent("account_vod_\(accountId).json")
     }
 
+    private func accountSeriesURL(accountId: String) -> URL {
+        storageDirectory.appendingPathComponent("account_series_\(accountId).json")
+    }
+
     private func saveAccountChannels(accountId: String, channels: [Channel]) {
         let file = accountChannelsURL(accountId: accountId)
         DispatchQueue.global(qos: .utility).async {
@@ -338,9 +390,28 @@ public final class XtreamAccountStore: ObservableObject {
         return []
     }
 
+    private func saveAccountSeries(accountId: String, series: [Series]) {
+        let file = accountSeriesURL(accountId: accountId)
+        DispatchQueue.global(qos: .utility).async {
+            if let data = try? JSONEncoder().encode(series) {
+                try? data.write(to: file, options: [.atomic])
+            }
+        }
+    }
+
+    private func loadAccountSeries(accountId: String) -> [Series] {
+        let file = accountSeriesURL(accountId: accountId)
+        if let data = try? Data(contentsOf: file),
+           let decoded = try? JSONDecoder().decode([Series].self, from: data) {
+            return decoded
+        }
+        return []
+    }
+
     private func deleteAccountCache(accountId: String) {
         try? fileManager.removeItem(at: accountChannelsURL(accountId: accountId))
         try? fileManager.removeItem(at: accountVODURL(accountId: accountId))
+        try? fileManager.removeItem(at: accountSeriesURL(accountId: accountId))
     }
 
     private func saveAccountsToDisk() {

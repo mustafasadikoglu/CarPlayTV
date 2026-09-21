@@ -159,6 +159,8 @@ public struct VODHomeView: View {
             selectedSeriesForDetail = series
             if let firstEp = series.seasons.first?.episodes.first {
                 selectedItemForDetail = firstEp
+            } else {
+                selectedItemForDetail = series.sampleVODItem
             }
         }
     }

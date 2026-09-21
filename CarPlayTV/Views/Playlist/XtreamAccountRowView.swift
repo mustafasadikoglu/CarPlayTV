@@ -75,15 +75,21 @@ public struct XtreamAccountRowView: View {
                 }
             }
 
-            // Stats row: Channels, VOD, Expiry Date
+            // Stats row: Channels, Film, Dizi, Expiry Date
             HStack(spacing: 12) {
                 Label("\(account.channelCount) Kanal", systemImage: "tv")
                     .font(.caption2)
                     .foregroundColor(.secondary)
 
-                Label("\(account.vodCount) VOD", systemImage: "film")
+                Label("\(account.vodCount) Film", systemImage: "film")
                     .font(.caption2)
                     .foregroundColor(.secondary)
+
+                if account.seriesCount > 0 {
+                    Label("\(account.seriesCount) Dizi", systemImage: "play.tv")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
 
                 if let exp = account.expirationDate {
                     Label(exp, systemImage: "calendar")

@@ -31,6 +31,17 @@ public final class VODStore: ObservableObject {
         updateCategories()
     }
 
+    public func setSeries(_ newSeries: [Series]) {
+        self.series = newSeries
+        updateCategories()
+    }
+
+    public func setLibrary(movies: [VODItem], series: [Series]) {
+        self.movies = movies
+        self.series = series
+        updateCategories()
+    }
+
     public func saveProgress(for item: VODItem, position: Double, duration: Double) {
         guard duration > 0 else { return }
 

@@ -73,6 +73,13 @@ public final class CarPlayInterfaceManager {
                 self?.refreshMoviesTemplate()
             }
             .store(in: &cancellables)
+
+        VODStore.shared.$series
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.refreshMoviesTemplate()
+            }
+            .store(in: &cancellables)
     }
 
     public func buildRootTemplate() {
@@ -237,16 +244,36 @@ public final class CarPlayInterfaceManager {
         }
 
         // 2. Movies Section
-        let movieItems = VODStore.shared.movies.map { vod in
+        let movieItems = VODStore.shared.movies.prefix(50).map { vod in
             makeMovieListItem(for: vod, isResume: false)
         }
-        sections.append(CPListSection(items: movieItems, header: "Tüm Filmler", sectionIndexTitle: "F"))
+        if !movieItems.isEmpty {
+            sections.append(CPListSection(items: Array(movieItems), header: "Filmler", sectionIndexTitle: "F"))
+        }
 
-        let template = CPListTemplate(title: "Filmler", sections: sections)
-        template.tabTitle = "Filmler"
+        // 3. Series Section
+        if !VODStore.shared.series.isEmpty {
+            let seriesItems = VODStore.shared.series.prefix(50).map { s -> CPListItem in
+                let item = CPListItem(text: s.title, detailText: s.categoryName)
+                item.setImage(UIImage(systemName: "play.tv.fill"))
+                item.handler = { [weak self] _, completion in
+                    if let firstEp = s.seasons.first?.episodes.first {
+                        self?.playVOD(firstEp)
+                    } else {
+                        self?.playVOD(s.sampleVODItem)
+                    }
+                    completion()
+                }
+                return item
+            }
+            sections.append(CPListSection(items: Array(seriesItems), header: "Diziler", sectionIndexTitle: "D"))
+        }
+
+        let template = CPListTemplate(title: "Filmler & Diziler", sections: sections)
+        template.tabTitle = "VOD"
         template.tabImage = UIImage(systemName: "film.fill")
-        template.emptyViewTitleVariants = ["Film Bulunamadı"]
-        template.emptyViewSubtitleVariants = ["Telefondan film arşivi ekleyebilirsiniz."]
+        template.emptyViewTitleVariants = ["İçerik Bulunamadı"]
+        template.emptyViewSubtitleVariants = ["Telefondan film veya dizi arşivi ekleyebilirsiniz."]
         return template
     }
 
@@ -371,10 +398,29 @@ public final class CarPlayInterfaceManager {
             }
             sections.append(CPListSection(items: Array(continueItems), header: "İzlemeye Devam Et", sectionIndexTitle: "D"))
         }
-        let movieItems = VODStore.shared.movies.map { vod in
+        let movieItems = VODStore.shared.movies.prefix(50).map { vod in
             makeMovieListItem(for: vod, isResume: false)
         }
-        sections.append(CPListSection(items: movieItems, header: "Tüm Filmler", sectionIndexTitle: "F"))
+        if !movieItems.isEmpty {
+            sections.append(CPListSection(items: Array(movieItems), header: "Filmler", sectionIndexTitle: "F"))
+        }
+
+        if !VODStore.shared.series.isEmpty {
+            let seriesItems = VODStore.shared.series.prefix(50).map { s -> CPListItem in
+                let item = CPListItem(text: s.title, detailText: s.categoryName)
+                item.setImage(UIImage(systemName: "play.tv.fill"))
+                item.handler = { [weak self] _, completion in
+                    if let firstEp = s.seasons.first?.episodes.first {
+                        self?.playVOD(firstEp)
+                    } else {
+                        self?.playVOD(s.sampleVODItem)
+                    }
+                    completion()
+                }
+                return item
+            }
+            sections.append(CPListSection(items: Array(seriesItems), header: "Diziler", sectionIndexTitle: "D"))
+        }
         moviesTemplate?.updateSections(sections)
     }
 
