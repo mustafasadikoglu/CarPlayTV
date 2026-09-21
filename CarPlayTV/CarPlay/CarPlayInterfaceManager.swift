@@ -258,9 +258,9 @@ public final class CarPlayInterfaceManager {
                 item.setImage(UIImage(systemName: "play.tv.fill"))
                 item.handler = { [weak self] _, completion in
                     if let firstEp = s.seasons.first?.episodes.first {
-                        self?.playVOD(firstEp)
+                        self?.playVODItem(firstEp)
                     } else {
-                        self?.playVOD(s.sampleVODItem)
+                        self?.playVODItem(s.sampleVODItem)
                     }
                     completion()
                 }
@@ -411,9 +411,9 @@ public final class CarPlayInterfaceManager {
                 item.setImage(UIImage(systemName: "play.tv.fill"))
                 item.handler = { [weak self] _, completion in
                     if let firstEp = s.seasons.first?.episodes.first {
-                        self?.playVOD(firstEp)
+                        self?.playVODItem(firstEp)
                     } else {
-                        self?.playVOD(s.sampleVODItem)
+                        self?.playVODItem(s.sampleVODItem)
                     }
                     completion()
                 }
