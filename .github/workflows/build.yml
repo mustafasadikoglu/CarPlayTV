@@ -32,6 +32,7 @@ jobs:
           node scripts/test_security_phase1.js
           node scripts/test_epg_parser.js
           node scripts/test_xtream_accounts.js
+          node scripts/test_series_episodes.js
 
       - name: Regenerate Xcode Project
         run: node scripts/generate_project.js

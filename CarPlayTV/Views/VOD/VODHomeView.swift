@@ -46,99 +46,173 @@ public struct VODHomeView: View {
 
     public var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    // Segmented Filter: Filmler vs Diziler
-                    Picker("İçerik Türü", selection: $selectedTab) {
-                        Text("Filmler (\(store.movies.count))").tag(0)
-                        Text("Diziler (\(store.series.count))").tag(1)
-                    }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal)
+            ZStack {
+                LiquidGlassBackground()
 
-                    // Continue Watching Row (if any)
-                    if !store.continueWatching.isEmpty {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("İzlemeye Devam Et")
-                                .font(.headline)
-                                .padding(.horizontal)
-
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 12) {
-                                    ForEach(store.continueWatching) { item in
-                                        VODCardView(item: item) {
-                                            selectedItemForDetail = item
-                                        }
-                                        .frame(width: 140)
-                                    }
-                                }
-                                .padding(.horizontal)
-                            }
-                        }
-                    }
-
-                    // Category Filter Pills
-                    ScrollView(.horizontal, showsIndicators: false) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        // Custom Glass Segmented Switcher (Large 48pt Touch Target)
                         HStack(spacing: 8) {
                             Button(action: {
-                                selectedCategory = "Tümü"
+                                withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
+                                    selectedTab = 0
+                                    selectedCategory = "Tümü"
+                                }
                             }) {
-                                Text("Tümü")
-                                    .font(.caption.bold())
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 8)
-                                    .background(selectedCategory == "Tümü" ? Color.accentColor : Color(UIColor.secondarySystemBackground))
-                                    .foregroundColor(selectedCategory == "Tümü" ? .white : .primary)
-                                    .cornerRadius(16)
+                                HStack(spacing: 6) {
+                                    Image(systemName: "film")
+                                    Text("Filmler (\(store.movies.count))")
+                                }
+                                .font(.system(size: 15, weight: .bold))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 48)
+                                .background(selectedTab == 0 ? Color.accentColor : Color.white.opacity(0.08))
+                                .background(.ultraThinMaterial)
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .stroke(
+                                            selectedTab == 0 ? Color.white.opacity(0.4) : Color.white.opacity(0.15),
+                                            lineWidth: 1
+                                        )
+                                )
+                                .foregroundColor(.white)
                             }
 
-                            ForEach(relevantCategories) { cat in
-                                Button(action: {
-                                    selectedCategory = cat.categoryName
-                                }) {
-                                    Text(cat.categoryName)
-                                        .font(.caption.bold())
-                                        .padding(.horizontal, 14)
-                                        .padding(.vertical, 8)
-                                        .background(selectedCategory == cat.categoryName ? Color.accentColor : Color(UIColor.secondarySystemBackground))
-                                        .foregroundColor(selectedCategory == cat.categoryName ? .white : .primary)
-                                        .cornerRadius(16)
+                            Button(action: {
+                                withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
+                                    selectedTab = 1
+                                    selectedCategory = "Tümü"
+                                }
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "play.tv")
+                                    Text("Diziler (\(store.series.count))")
+                                }
+                                .font(.system(size: 15, weight: .bold))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 48)
+                                .background(selectedTab == 1 ? Color.purple : Color.white.opacity(0.08))
+                                .background(.ultraThinMaterial)
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .stroke(
+                                            selectedTab == 1 ? Color.white.opacity(0.4) : Color.white.opacity(0.15),
+                                            lineWidth: 1
+                                        )
+                                )
+                                .foregroundColor(.white)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 4)
+
+                        // Continue Watching Row (if any)
+                        if !store.continueWatching.isEmpty {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("İzlemeye Devam Et")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 16)
+
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 14) {
+                                        ForEach(store.continueWatching) { item in
+                                            VODCardView(item: item) {
+                                                selectedSeriesForDetail = nil
+                                                selectedItemForDetail = item
+                                            }
+                                            .frame(width: 145)
+                                        }
+                                    }
+                                    .padding(.horizontal, 16)
                                 }
                             }
                         }
-                        .padding(.horizontal)
-                    }
 
-                    // Main Content Grid
-                    if selectedTab == 0 {
-                        // Movies Grid
-                        if filteredMovies.isEmpty {
-                            emptyStateView(message: "Film bulunamadı")
-                        } else {
-                            LazyVGrid(columns: columns, spacing: 16) {
-                                ForEach(filteredMovies) { movie in
-                                    VODCardView(item: movie) {
-                                        selectedItemForDetail = movie
+                        // Category Filter Pills (Large 44pt Touch Targets)
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 10) {
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
+                                        selectedCategory = "Tümü"
+                                    }
+                                }) {
+                                    Text("Tümü")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .padding(.horizontal, 16)
+                                        .frame(height: 44)
+                                        .background(selectedCategory == "Tümü" ? Color.accentColor : Color.white.opacity(0.08))
+                                        .background(.ultraThinMaterial)
+                                        .clipShape(Capsule())
+                                        .overlay(
+                                            Capsule().stroke(
+                                                selectedCategory == "Tümü" ? Color.white.opacity(0.6) : Color.white.opacity(0.18),
+                                                lineWidth: 1
+                                            )
+                                        )
+                                        .foregroundColor(.white)
+                                }
+
+                                ForEach(relevantCategories) { cat in
+                                    Button(action: {
+                                        withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
+                                            selectedCategory = cat.categoryName
+                                        }
+                                    }) {
+                                        Text(cat.categoryName)
+                                            .font(.system(size: 14, weight: .bold))
+                                            .padding(.horizontal, 16)
+                                            .frame(height: 44)
+                                            .background(selectedCategory == cat.categoryName ? Color.accentColor : Color.white.opacity(0.08))
+                                            .background(.ultraThinMaterial)
+                                            .clipShape(Capsule())
+                                            .overlay(
+                                                Capsule().stroke(
+                                                    selectedCategory == cat.categoryName ? Color.white.opacity(0.6) : Color.white.opacity(0.18),
+                                                    lineWidth: 1
+                                                )
+                                            )
+                                            .foregroundColor(.white)
                                     }
                                 }
                             }
-                            .padding(.horizontal)
+                            .padding(.horizontal, 16)
                         }
-                    } else {
-                        // Series Grid
-                        if filteredSeries.isEmpty {
-                            emptyStateView(message: "Dizi bulunamadı")
-                        } else {
-                            LazyVGrid(columns: columns, spacing: 16) {
-                                ForEach(filteredSeries) { series in
-                                    seriesCard(for: series)
+
+                        // Content Grid
+                        if selectedTab == 0 {
+                            // Movies Grid
+                            if filteredMovies.isEmpty {
+                                emptyStateView(message: "Film bulunamadı")
+                            } else {
+                                LazyVGrid(columns: columns, spacing: 18) {
+                                    ForEach(filteredMovies) { movie in
+                                        VODCardView(item: movie) {
+                                            selectedSeriesForDetail = nil
+                                            selectedItemForDetail = movie
+                                        }
+                                    }
                                 }
+                                .padding(.horizontal, 16)
                             }
-                            .padding(.horizontal)
+                        } else {
+                            // Series Grid
+                            if filteredSeries.isEmpty {
+                                emptyStateView(message: "Dizi bulunamadı")
+                            } else {
+                                LazyVGrid(columns: columns, spacing: 18) {
+                                    ForEach(filteredSeries) { series in
+                                        seriesCard(for: series)
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                            }
                         }
                     }
+                    .padding(.vertical, 10)
                 }
-                .padding(.vertical, 8)
             }
             .navigationTitle("Filmler & Diziler")
             .searchable(text: $searchText, prompt: "Film, dizi veya tür ara...")
@@ -169,13 +243,13 @@ public struct VODHomeView: View {
         VStack(spacing: 12) {
             Spacer()
             Image(systemName: "film.stack")
-                .font(.system(size: 48))
-                .foregroundColor(.secondary)
+                .font(.system(size: 54))
+                .foregroundColor(.white.opacity(0.35))
             Text(message)
-                .font(.headline)
-                .foregroundColor(.secondary)
+                .font(.title3.bold())
+                .foregroundColor(.white)
             Spacer()
         }
-        .frame(maxWidth: .infinity, minHeight: 200)
+        .frame(maxWidth: .infinity, minHeight: 220)
     }
 }

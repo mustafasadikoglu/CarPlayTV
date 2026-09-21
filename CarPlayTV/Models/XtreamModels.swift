@@ -410,3 +410,143 @@ public struct XtreamSeriesItem: Codable, Identifiable {
     }
 }
 
+// MARK: - Xtream Series Details & Episode Models
+
+public struct XtreamEpisodeInfo: Codable {
+    public let durationSecs: Int?
+    public let duration: String?
+    public let plot: String?
+    public let movieImage: String?
+    public let rating: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case durationSecs = "duration_secs"
+        case duration
+        case plot
+        case movieImage = "movie_image"
+        case rating
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let ds = try? container.decode(Int.self, forKey: .durationSecs) {
+            self.durationSecs = ds
+        } else if let dsStr = try? container.decode(String.self, forKey: .durationSecs) {
+            self.durationSecs = Int(dsStr)
+        } else {
+            self.durationSecs = nil
+        }
+
+        self.duration = try? container.decode(String.self, forKey: .duration)
+        self.plot = try? container.decode(String.self, forKey: .plot)
+        self.movieImage = try? container.decode(String.self, forKey: .movieImage)
+
+        if let r = try? container.decode(Double.self, forKey: .rating) {
+            self.rating = r
+        } else if let rStr = try? container.decode(String.self, forKey: .rating) {
+            self.rating = Double(rStr)
+        } else {
+            self.rating = nil
+        }
+    }
+}
+
+public struct XtreamEpisodeItem: Codable, Identifiable {
+    public let id: String
+    public let episodeNum: Int
+    public let title: String
+    public let containerExtension: String?
+    public let season: Int
+    public let info: XtreamEpisodeInfo?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case episodeNum = "episode_num"
+        case title
+        case containerExtension = "container_extension"
+        case season
+        case info
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let idInt = try? container.decode(Int.self, forKey: .id) {
+            self.id = String(idInt)
+        } else if let idStr = try? container.decode(String.self, forKey: .id) {
+            self.id = idStr
+        } else {
+            self.id = UUID().uuidString
+        }
+
+        if let epInt = try? container.decode(Int.self, forKey: .episodeNum) {
+            self.episodeNum = epInt
+        } else if let epStr = try? container.decode(String.self, forKey: .episodeNum) {
+            self.episodeNum = Int(epStr) ?? 1
+        } else {
+            self.episodeNum = 1
+        }
+
+        self.title = (try? container.decode(String.self, forKey: .title)) ?? "\(self.episodeNum). Bölüm"
+        self.containerExtension = try? container.decode(String.self, forKey: .containerExtension)
+
+        if let sInt = try? container.decode(Int.self, forKey: .season) {
+            self.season = sInt
+        } else if let sStr = try? container.decode(String.self, forKey: .season) {
+            self.season = Int(sStr) ?? 1
+        } else {
+            self.season = 1
+        }
+
+        self.info = try? container.decode(XtreamEpisodeInfo.self, forKey: .info)
+    }
+}
+
+public struct XtreamSeasonInfo: Codable, Identifiable {
+    public var id: Int { seasonNumber }
+    public let seasonNumber: Int
+    public let name: String
+    public let episodeCount: Int?
+    public let overview: String?
+    public let cover: String?
+
+    enum CodingKeys: String, CodingKey {
+        case seasonNumber = "season_number"
+        case name
+        case episodeCount = "episode_count"
+        case overview
+        case cover
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let snInt = try? container.decode(Int.self, forKey: .seasonNumber) {
+            self.seasonNumber = snInt
+        } else if let snStr = try? container.decode(String.self, forKey: .seasonNumber) {
+            self.seasonNumber = Int(snStr) ?? 1
+        } else {
+            self.seasonNumber = 1
+        }
+
+        self.name = (try? container.decode(String.self, forKey: .name)) ?? "\(self.seasonNumber). Sezon"
+        self.episodeCount = try? container.decode(Int.self, forKey: .episodeCount)
+        self.overview = try? container.decode(String.self, forKey: .overview)
+        self.cover = try? container.decode(String.self, forKey: .cover)
+    }
+}
+
+public struct XtreamSeriesInfoResponse: Decodable {
+    public let seasons: [XtreamSeasonInfo]
+    public let episodes: [String: [XtreamEpisodeItem]]
+
+    enum CodingKeys: String, CodingKey {
+        case seasons
+        case episodes
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.seasons = (try? container.decode([XtreamSeasonInfo].self, forKey: .seasons)) ?? []
+        self.episodes = (try? container.decode([String: [XtreamEpisodeItem]].self, forKey: .episodes)) ?? [:]
+    }
+}
+

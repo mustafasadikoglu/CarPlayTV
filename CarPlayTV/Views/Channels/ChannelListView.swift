@@ -23,110 +23,153 @@ public struct ChannelListView: View {
 
     public var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Progressive Parsing Banner (For Large Playlists)
-                if let progress = store.parseProgressText {
-                    HStack(spacing: 8) {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                        Text(progress)
-                            .font(.caption.bold())
-                            .foregroundColor(.accentColor)
-                        Spacer()
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 6)
-                    .background(Color.accentColor.opacity(0.12))
-                }
+            ZStack {
+                LiquidGlassBackground()
 
-                // Category Pills
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        // Favorites quick toggle pill
-                        Button(action: {
-                            withAnimation {
-                                onlyFavorites.toggle()
-                            }
-                        }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "star.fill")
-                                Text("Favoriler (\(store.favoriteChannels.count))")
-                            }
-                            .font(.caption.bold())
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(onlyFavorites ? Color.yellow : Color(UIColor.secondarySystemBackground))
-                            .foregroundColor(onlyFavorites ? .black : .primary)
-                            .cornerRadius(20)
+                VStack(spacing: 0) {
+                    // Progressive Parsing Banner
+                    if let progress = store.parseProgressText {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(0.8)
+                            Text(progress)
+                                .font(.caption.bold())
+                                .foregroundColor(.white)
+                            Spacer()
                         }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.accentColor.opacity(0.3))
+                        .liquidGlass(cornerRadius: 0)
+                    }
 
-                        if !onlyFavorites {
-                            ForEach(store.categories) { cat in
-                                Button(action: {
-                                    withAnimation {
-                                        selectedCategory = cat.name
+                    // Category Pills (Large 44pt Touch Targets)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 10) {
+                            // Favorites quick toggle pill
+                            Button(action: {
+                                withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
+                                    onlyFavorites.toggle()
+                                }
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "star.fill")
+                                        .font(.system(size: 14))
+                                    Text("Favoriler (\(store.favoriteChannels.count))")
+                                        .font(.system(size: 14, weight: .bold))
+                                }
+                                .padding(.horizontal, 16)
+                                .frame(height: 44)
+                                .background(
+                                    ZStack {
+                                        if onlyFavorites {
+                                            Color.yellow
+                                        } else {
+                                            Color.white.opacity(0.08)
+                                        }
                                     }
-                                }) {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: cat.iconName)
-                                        Text(cat.name)
-                                        Text("(\(cat.channelCount))")
-                                            .foregroundColor(selectedCategory == cat.name ? .white.opacity(0.8) : .secondary)
+                                )
+                                .background(.ultraThinMaterial)
+                                .clipShape(Capsule())
+                                .overlay(
+                                    Capsule().stroke(
+                                        onlyFavorites ? Color.white.opacity(0.6) : Color.white.opacity(0.18),
+                                        lineWidth: 1
+                                    )
+                                )
+                                .foregroundColor(onlyFavorites ? .black : .white)
+                            }
+
+                            if !onlyFavorites {
+                                ForEach(store.categories) { cat in
+                                    Button(action: {
+                                        withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
+                                            selectedCategory = cat.name
+                                        }
+                                    }) {
+                                        HStack(spacing: 6) {
+                                            Image(systemName: cat.iconName)
+                                                .font(.system(size: 14))
+                                            Text(cat.name)
+                                                .font(.system(size: 14, weight: .bold))
+                                            Text("(\(cat.channelCount))")
+                                                .font(.caption2.bold())
+                                                .foregroundColor(selectedCategory == cat.name ? .white.opacity(0.9) : .white.opacity(0.5))
+                                        }
+                                        .padding(.horizontal, 16)
+                                        .frame(height: 44)
+                                        .background(
+                                            ZStack {
+                                                if selectedCategory == cat.name {
+                                                    Color.accentColor
+                                                } else {
+                                                    Color.white.opacity(0.08)
+                                                }
+                                            }
+                                        )
+                                        .background(.ultraThinMaterial)
+                                        .clipShape(Capsule())
+                                        .overlay(
+                                            Capsule().stroke(
+                                                selectedCategory == cat.name ? Color.white.opacity(0.6) : Color.white.opacity(0.18),
+                                                lineWidth: 1
+                                            )
+                                        )
+                                        .foregroundColor(.white)
                                     }
-                                    .font(.caption.bold())
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 8)
-                                    .background(selectedCategory == cat.name ? Color.accentColor : Color(UIColor.secondarySystemBackground))
-                                    .foregroundColor(selectedCategory == cat.name ? .white : .primary)
-                                    .cornerRadius(20)
                                 }
                             }
                         }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
                     }
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-                }
 
-                // Channel List
-                if displayedChannels.isEmpty {
-                    VStack(spacing: 12) {
-                        Spacer()
-                        Image(systemName: "tv.slash")
-                            .font(.system(size: 48))
-                            .foregroundColor(.secondary)
-                        Text(onlyFavorites ? "Henüz favori kanalınız yok" : "Kanal bulunamadı")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        Text("Çalma listesi sekmesinden M3U veya Xtream linki ekleyebilirsiniz.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 32)
-                        Spacer()
-                    }
-                } else {
-                    List {
-                        ForEach(displayedChannels) { channel in
-                            ChannelRowView(
-                                channel: channel,
-                                isCurrent: playback.currentChannel?.id == channel.id,
-                                onSelect: {
-                                    playback.play(channel: channel)
-                                    isPresentingFullscreenPlayer = true
-                                },
-                                onToggleFavorite: {
-                                    store.toggleFavorite(channelId: channel.id)
-                                }
-                            )
+                    // Channel List
+                    if displayedChannels.isEmpty {
+                        VStack(spacing: 14) {
+                            Spacer()
+                            Image(systemName: "tv.slash")
+                                .font(.system(size: 54))
+                                .foregroundColor(.white.opacity(0.4))
+                            Text(onlyFavorites ? "Henüz favori kanalınız yok" : "Kanal bulunamadı")
+                                .font(.title3.bold())
+                                .foregroundColor(.white)
+                            Text("Listeler sekmesinden M3U veya Xtream linki ekleyebilirsiniz.")
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.6))
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 32)
+                            Spacer()
                         }
+                    } else {
+                        List {
+                            ForEach(displayedChannels) { channel in
+                                ChannelRowView(
+                                    channel: channel,
+                                    isCurrent: playback.currentChannel?.id == channel.id,
+                                    onSelect: {
+                                        playback.play(channel: channel)
+                                        isPresentingFullscreenPlayer = true
+                                    },
+                                    onToggleFavorite: {
+                                        store.toggleFavorite(channelId: channel.id)
+                                    }
+                                )
+                                .listRowInsets(EdgeInsets(top: 5, leading: 16, bottom: 5, trailing: 16))
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                            }
+                        }
+                        .listStyle(PlainListStyle())
+                        .scrollContentBackground(.hidden)
                     }
-                    .listStyle(PlainListStyle())
-                }
 
-                // Mini Player Bar (if channel selected)
-                if let current = playback.currentChannel {
-                    MiniPlayerBar(channel: current) {
-                        isPresentingFullscreenPlayer = true
+                    // Mini Player Floating Bar (if playing)
+                    if let current = playback.currentChannel {
+                        MiniPlayerBar(channel: current) {
+                            isPresentingFullscreenPlayer = true
+                        }
                     }
                 }
             }
@@ -135,7 +178,7 @@ public struct ChannelListView: View {
             .onChange(of: searchText, perform: { newQuery in
                 searchTask?.cancel()
                 searchTask = Task {
-                    try? await Task.sleep(nanoseconds: 250_000_000) // 250ms debounce
+                    try? await Task.sleep(nanoseconds: 250_000_000)
                     if !Task.isCancelled {
                         let results = await store.searchChannels(
                             query: newQuery,
@@ -161,31 +204,32 @@ public struct MiniPlayerBar: View {
     let onTap: () -> Void
 
     public var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 14) {
             ZStack {
-                CachedAsyncImage(url: channel.logoURL, targetSize: CGSize(width: 72, height: 72)) { image in
+                CachedAsyncImage(url: channel.logoURL, targetSize: CGSize(width: 80, height: 80)) { image in
                     image
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 38, height: 26)
-                        .cornerRadius(4)
+                        .frame(width: 44, height: 32)
+                        .cornerRadius(6)
                 } placeholder: {
                     Image(systemName: "tv.fill")
-                        .font(.system(size: 16))
+                        .font(.system(size: 18))
                         .foregroundColor(.white.opacity(0.85))
                 }
             }
-            .frame(width: 48, height: 34)
-            .background(Color.black.opacity(0.4))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .frame(width: 54, height: 40)
+            .background(Color.white.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
             .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(LinearGradient(colors: [.white.opacity(0.35), .white.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
             )
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(channel.name)
-                    .font(.subheadline.bold())
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(.white)
                     .lineLimit(1)
 
                 HStack(spacing: 6) {
@@ -197,38 +241,34 @@ public struct MiniPlayerBar: View {
                     if playback.isCarPlayConnected {
                         Text("• CarPlay")
                             .font(.caption2.bold())
-                            .foregroundColor(.blue)
+                            .foregroundColor(.cyan)
                     }
                 }
             }
 
             Spacer()
 
+            // Large 48x48pt Play / Pause button
             Button(action: {
                 playback.togglePlayPause()
             }) {
                 Image(systemName: playback.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.white)
-                    .frame(width: 38, height: 38)
-                    .background(.ultraThinMaterial)
+                    .frame(width: 48, height: 48)
+                    .background(Color.accentColor)
                     .clipShape(Circle())
                     .overlay(
-                        Circle().stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        Circle().stroke(Color.white.opacity(0.4), lineWidth: 1.2)
                     )
+                    .shadow(color: Color.accentColor.opacity(0.4), radius: 8, x: 0, y: 3)
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(LinearGradient(colors: [.white.opacity(0.3), .white.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.3), radius: 10, x: 0, y: 4)
-        .padding(.horizontal, 12)
-        .padding(.bottom, 6)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .liquidGlass(cornerRadius: 18)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
         .onTapGesture {
             onTap()
         }

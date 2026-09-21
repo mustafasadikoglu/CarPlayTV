@@ -257,11 +257,7 @@ public final class CarPlayInterfaceManager {
                 let item = CPListItem(text: s.title, detailText: s.categoryName)
                 item.setImage(UIImage(systemName: "play.tv.fill"))
                 item.handler = { [weak self] _, completion in
-                    if let firstEp = s.seasons.first?.episodes.first {
-                        self?.playVODItem(firstEp)
-                    } else {
-                        self?.playVODItem(s.sampleVODItem)
-                    }
+                    self?.showSeriesEpisodes(for: s)
                     completion()
                 }
                 return item
@@ -410,11 +406,7 @@ public final class CarPlayInterfaceManager {
                 let item = CPListItem(text: s.title, detailText: s.categoryName)
                 item.setImage(UIImage(systemName: "play.tv.fill"))
                 item.handler = { [weak self] _, completion in
-                    if let firstEp = s.seasons.first?.episodes.first {
-                        self?.playVODItem(firstEp)
-                    } else {
-                        self?.playVODItem(s.sampleVODItem)
-                    }
+                    self?.showSeriesEpisodes(for: s)
                     completion()
                 }
                 return item
@@ -422,6 +414,43 @@ public final class CarPlayInterfaceManager {
             sections.append(CPListSection(items: Array(seriesItems), header: "Diziler", sectionIndexTitle: "D"))
         }
         moviesTemplate?.updateSections(sections)
+    }
+
+    private func showSeriesEpisodes(for series: Series) {
+        guard let controller = interfaceController else { return }
+
+        Task { @MainActor in
+            let loaded = await VODStore.shared.fetchSeriesEpisodes(for: series)
+            var sections: [CPListSection] = []
+
+            for season in loaded.seasons {
+                let epItems = season.episodes.map { ep -> CPListItem in
+                    let item = CPListItem(text: ep.title, detailText: ep.formattedDuration)
+                    item.setImage(UIImage(systemName: "play.circle.fill"))
+                    item.handler = { [weak self] _, completion in
+                        self?.playVODItem(ep)
+                        completion()
+                    }
+                    return item
+                }
+                if !epItems.isEmpty {
+                    sections.append(CPListSection(items: epItems, header: season.name))
+                }
+            }
+
+            if sections.isEmpty {
+                let fallbackItem = CPListItem(text: "\(series.title) - Oynat", detailText: "İlk Bölüm")
+                fallbackItem.setImage(UIImage(systemName: "play.fill"))
+                fallbackItem.handler = { [weak self] _, completion in
+                    self?.playVODItem(series.sampleVODItem)
+                    completion()
+                }
+                sections.append(CPListSection(items: [fallbackItem]))
+            }
+
+            let detailTemplate = CPListTemplate(title: series.title, sections: sections)
+            controller.pushTemplate(detailTemplate, animated: true)
+        }
     }
 
     private func refreshCategoriesTemplate() {

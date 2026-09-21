@@ -38,6 +38,7 @@ const files = [
     { name: "CarPlayInterfaceManager.swift", path: "CarPlayTV/CarPlay/CarPlayInterfaceManager.swift", isSource: true },
     { name: "CarPlayVideoWindowController.swift", path: "CarPlayTV/CarPlay/CarPlayVideoWindowController.swift", isSource: true },
     { name: "CachedAsyncImage.swift", path: "CarPlayTV/Views/Common/CachedAsyncImage.swift", isSource: true },
+    { name: "LiquidGlassTheme.swift", path: "CarPlayTV/Views/Common/LiquidGlassTheme.swift", isSource: true },
     { name: "CustomVideoPlayerView.swift", path: "CarPlayTV/Views/Player/CustomVideoPlayerView.swift", isSource: true },
     { name: "VideoControlsOverlayView.swift", path: "CarPlayTV/Views/Player/VideoControlsOverlayView.swift", isSource: true },
     { name: "FullscreenPlayerView.swift", path: "CarPlayTV/Views/Player/FullscreenPlayerView.swift", isSource: true },

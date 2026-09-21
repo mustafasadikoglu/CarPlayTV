@@ -94,6 +94,45 @@ public final class VODStore: ObservableObject {
         }
     }
 
+    /// Loads seasons and episodes for a series, either from active Xtream account or returns cached.
+    public func fetchSeriesEpisodes(for series: Series) async -> Series {
+        // If already has episodes loaded, return cached
+        if !series.seasons.isEmpty && series.seasons.contains(where: { !$0.episodes.isEmpty }) {
+            return series
+        }
+
+        // Check if stored series in library already has episodes
+        if let stored = self.series.first(where: { $0.id == series.id }),
+           !stored.seasons.isEmpty && stored.seasons.contains(where: { !$0.episodes.isEmpty }) {
+            return stored
+        }
+
+        guard let active = XtreamAccountStore.shared.activeAccount,
+              let pass = active.securePassword else {
+            return series
+        }
+
+        do {
+            let updated = try await XtreamCodesClient.shared.fetchSeriesDetails(
+                server: active.server,
+                username: active.username,
+                password: pass,
+                series: series
+            )
+
+            await MainActor.run {
+                if let idx = self.series.firstIndex(where: { $0.id == series.id }) {
+                    self.series[idx] = updated
+                }
+            }
+
+            return updated
+        } catch {
+            SanitizedLogger.warning("Dizi bölümleri yüklenemedi: \(error.localizedDescription)")
+            return series
+        }
+    }
+
     private func updateCategories() {
         var cats: [VODCategory] = []
         let uniqueMovieCats = Set(movies.map { $0.categoryName })

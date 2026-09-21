@@ -60,14 +60,15 @@ public struct VideoControlsOverlayView: View {
             if let onClose = onClose {
                 Button(action: onClose) {
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white.opacity(0.9))
-                        .frame(width: 36, height: 36)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.white.opacity(0.95))
+                        .frame(width: 48, height: 48)
                         .background(.ultraThinMaterial)
                         .clipShape(Circle())
                         .overlay(
-                            Circle().stroke(Color.white.opacity(0.25), lineWidth: 1)
+                            Circle().stroke(Color.white.opacity(0.28), lineWidth: 1.2)
                         )
+                        .shadow(color: Color.black.opacity(0.3), radius: 6, x: 0, y: 2)
                 }
             }
 
@@ -176,14 +177,15 @@ public struct VideoControlsOverlayView: View {
                 }
             } label: {
                 Image(systemName: "aspectratio")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.9))
-                    .frame(width: 36, height: 36)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.95))
+                    .frame(width: 48, height: 48)
                     .background(.ultraThinMaterial)
                     .clipShape(Circle())
                     .overlay(
-                        Circle().stroke(Color.white.opacity(0.25), lineWidth: 1)
+                        Circle().stroke(Color.white.opacity(0.28), lineWidth: 1.2)
                     )
+                    .shadow(color: Color.black.opacity(0.3), radius: 6, x: 0, y: 2)
             }
 
             // EPG Sheet Button for Live Stream
@@ -192,14 +194,15 @@ public struct VideoControlsOverlayView: View {
                     isShowingEPGSheet = true
                 }) {
                     Image(systemName: "calendar.badge.clock")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.9))
-                        .frame(width: 36, height: 36)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.95))
+                        .frame(width: 48, height: 48)
                         .background(.ultraThinMaterial)
                         .clipShape(Circle())
                         .overlay(
-                            Circle().stroke(Color.white.opacity(0.25), lineWidth: 1)
+                            Circle().stroke(Color.white.opacity(0.28), lineWidth: 1.2)
                         )
+                        .shadow(color: Color.black.opacity(0.3), radius: 6, x: 0, y: 2)
                 }
             }
         }
@@ -287,100 +290,113 @@ public struct VideoControlsOverlayView: View {
             }
 
             // Playback Buttons Dock
-            HStack(spacing: 36) {
+            HStack(spacing: 42) {
                 if playback.isLiveStream {
-                    // Previous Channel
+                    // Previous Channel (56x56)
                     Button(action: {
                         playback.playPreviousChannel()
                         resetTimer()
                     }) {
                         Image(systemName: "backward.end.fill")
-                            .font(.system(size: 20, weight: .semibold))
+                            .font(.system(size: 24, weight: .semibold))
                             .foregroundColor(.white.opacity(0.95))
-                            .frame(width: 44, height: 44)
+                            .frame(width: 56, height: 56)
                             .background(.ultraThinMaterial)
                             .clipShape(Circle())
                             .overlay(
-                                Circle().stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                Circle().stroke(Color.white.opacity(0.28), lineWidth: 1.2)
                             )
+                            .shadow(color: Color.black.opacity(0.35), radius: 8, x: 0, y: 3)
                     }
                 } else {
-                    // Skip Backward 10s
+                    // Skip Backward 10s (56x56)
                     Button(action: {
                         playback.skipBackward(seconds: 10)
                         resetTimer()
                     }) {
                         Image(systemName: "gobackward.10")
-                            .font(.system(size: 22, weight: .semibold))
+                            .font(.system(size: 24, weight: .semibold))
                             .foregroundColor(.white.opacity(0.95))
-                            .frame(width: 44, height: 44)
+                            .frame(width: 56, height: 56)
                             .background(.ultraThinMaterial)
                             .clipShape(Circle())
                             .overlay(
-                                Circle().stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                Circle().stroke(Color.white.opacity(0.28), lineWidth: 1.2)
                             )
+                            .shadow(color: Color.black.opacity(0.35), radius: 8, x: 0, y: 3)
                     }
                 }
 
-                // Play / Pause Main Orb
+                // Play / Pause Main Glass Orb (76x76)
                 Button(action: {
                     playback.togglePlayPause()
                     resetTimer()
                 }) {
                     ZStack {
                         Circle()
-                            .fill(.ultraThinMaterial)
-                            .frame(width: 64, height: 64)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color.accentColor.opacity(0.9),
+                                        Color.accentColor.opacity(0.65)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 76, height: 76)
                             .overlay(
                                 Circle()
                                     .stroke(
                                         LinearGradient(
-                                            colors: [.white.opacity(0.4), .white.opacity(0.1)],
+                                            colors: [.white.opacity(0.6), .white.opacity(0.15)],
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
                                         ),
-                                        lineWidth: 1.5
+                                        lineWidth: 2
                                     )
                             )
-                            .shadow(color: Color.black.opacity(0.4), radius: 10, x: 0, y: 4)
+                            .shadow(color: Color.accentColor.opacity(0.5), radius: 14, x: 0, y: 6)
 
                         Image(systemName: playback.isPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: 26, weight: .bold))
+                            .font(.system(size: 32, weight: .bold))
                             .foregroundColor(.white)
                     }
                 }
 
                 if playback.isLiveStream {
-                    // Next Channel
+                    // Next Channel (56x56)
                     Button(action: {
                         playback.playNextChannel()
                         resetTimer()
                     }) {
                         Image(systemName: "forward.end.fill")
-                            .font(.system(size: 20, weight: .semibold))
+                            .font(.system(size: 24, weight: .semibold))
                             .foregroundColor(.white.opacity(0.95))
-                            .frame(width: 44, height: 44)
+                            .frame(width: 56, height: 56)
                             .background(.ultraThinMaterial)
                             .clipShape(Circle())
                             .overlay(
-                                Circle().stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                Circle().stroke(Color.white.opacity(0.28), lineWidth: 1.2)
                             )
+                            .shadow(color: Color.black.opacity(0.35), radius: 8, x: 0, y: 3)
                     }
                 } else {
-                    // Skip Forward 10s
+                    // Skip Forward 10s (56x56)
                     Button(action: {
                         playback.skipForward(seconds: 10)
                         resetTimer()
                     }) {
                         Image(systemName: "goforward.10")
-                            .font(.system(size: 22, weight: .semibold))
+                            .font(.system(size: 24, weight: .semibold))
                             .foregroundColor(.white.opacity(0.95))
-                            .frame(width: 44, height: 44)
+                            .frame(width: 56, height: 56)
                             .background(.ultraThinMaterial)
                             .clipShape(Circle())
                             .overlay(
-                                Circle().stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                Circle().stroke(Color.white.opacity(0.28), lineWidth: 1.2)
                             )
+                            .shadow(color: Color.black.opacity(0.35), radius: 8, x: 0, y: 3)
                     }
                 }
             }

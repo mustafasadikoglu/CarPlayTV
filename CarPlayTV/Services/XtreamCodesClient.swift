@@ -322,4 +322,85 @@ public final class XtreamCodesClient {
             )
         }
     }
+
+    /// Fetches seasons and playable episodes for a given series using action=get_series_info
+    public func fetchSeriesDetails(server: String, username: String, password: String, series: Series) async throws -> Series {
+        let cleanBase = cleanServerURL(server)
+        let encUser = encoded(username)
+        let encPass = encoded(password)
+        let rawId = series.id.replacingOccurrences(of: "series_", with: "")
+
+        guard let url = URL(string: "\(cleanBase)/player_api.php?username=\(encUser)&password=\(encPass)&action=get_series_info&series_id=\(rawId)") else {
+            throw URLError(.badURL)
+        }
+
+        let (data, response) = try await session.data(from: url)
+        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+
+        let decoder = JSONDecoder()
+        let details = (try? decoder.decode(XtreamSeriesInfoResponse.self, from: data))
+
+        var seasonsDict: [Int: [VODItem]] = [:]
+        var seasonNames: [Int: String] = [:]
+
+        if let details = details {
+            for s in details.seasons {
+                seasonNames[s.seasonNumber] = s.name
+            }
+
+            for (seasonKey, epList) in details.episodes {
+                let sNum = Int(seasonKey) ?? 1
+                var vodEpisodes: [VODItem] = []
+
+                for ep in epList {
+                    let ext = ep.containerExtension ?? "mp4"
+                    let streamUrlString = "\(cleanBase)/series/\(username)/\(password)/\(ep.id).\(ext)"
+                    guard let streamURL = URL(string: streamUrlString) else { continue }
+
+                    let posterURL = ep.info?.movieImage.flatMap { URL(string: $0) } ?? series.coverURL
+                    let dur = Double(ep.info?.durationSecs ?? 0)
+
+                    let vodEp = VODItem(
+                        id: "ep_\(ep.id)",
+                        title: ep.title,
+                        streamURL: streamURL,
+                        posterURL: posterURL,
+                        backdropURL: posterURL,
+                        rating: ep.info?.rating ?? series.rating,
+                        year: series.year,
+                        genre: series.genre,
+                        plot: ep.info?.plot ?? series.plot,
+                        duration: dur,
+                        categoryName: series.categoryName,
+                        type: .seriesEpisode,
+                        seriesId: series.id,
+                        seasonNumber: sNum,
+                        episodeNumber: ep.episodeNum
+                    )
+                    vodEpisodes.append(vodEp)
+                }
+
+                // Sort episodes by episodeNumber
+                vodEpisodes.sort { ($0.episodeNumber ?? 0) < ($1.episodeNumber ?? 0) }
+                seasonsDict[sNum] = vodEpisodes
+            }
+        }
+
+        // Build sorted array of SeriesSeason
+        var resultSeasons: [SeriesSeason] = []
+        for sNum in seasonsDict.keys.sorted() {
+            let episodes = seasonsDict[sNum] ?? []
+            let sName = seasonNames[sNum] ?? "\(sNum). Sezon"
+            resultSeasons.append(SeriesSeason(seasonNumber: sNum, name: sName, episodes: episodes))
+        }
+
+        var updated = series
+        if !resultSeasons.isEmpty {
+            updated.seasons = resultSeasons
+        }
+        return updated
+    }
 }
+
