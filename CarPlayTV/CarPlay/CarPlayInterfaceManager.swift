@@ -434,7 +434,7 @@ public final class CarPlayInterfaceManager {
                     return item
                 }
                 if !epItems.isEmpty {
-                    sections.append(CPListSection(items: epItems, header: season.name))
+                    sections.append(CPListSection(items: epItems, header: season.name, sectionIndexTitle: "\(season.seasonNumber)"))
                 }
             }
 
