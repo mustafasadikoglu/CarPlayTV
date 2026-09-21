@@ -81,8 +81,15 @@ const sampleSeriesInfoPayload = {
     }
 };
 
+function encodePathComponent(str) {
+    return encodeURIComponent(str).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase());
+}
+
 function parseSeriesDetails(payload, server, username, password, series) {
     const cleanBase = server.replace(/\/+$/, '');
+    const pathUser = encodePathComponent(username);
+    const pathPass = encodePathComponent(password);
+
     const seasonNames = {};
     if (payload.seasons && Array.isArray(payload.seasons)) {
         for (const s of payload.seasons) {
@@ -97,9 +104,14 @@ function parseSeriesDetails(payload, server, username, password, series) {
             const vodEpisodes = [];
 
             for (const ep of epList) {
-                const epId = String(ep.id);
-                const ext = ep.container_extension || 'mp4';
-                const streamUrl = `${cleanBase}/series/${username}/${password}/${epId}.${ext}`;
+                const epId = String(ep.id || ep.episode_id || ep.stream_id || '');
+                if (!epId) continue;
+
+                let ext = (ep.container_extension || ep.info?.container_extension || 'mp4').toLowerCase().trim();
+                if (ext === 'mkv' || ext === 'avi' || !ext) {
+                    ext = 'mp4';
+                }
+                const streamUrl = `${cleanBase}/series/${pathUser}/${pathPass}/${epId}.${ext}`;
                 const epNum = parseInt(ep.episode_num, 10) || 1;
                 const dur = ep.info?.duration_secs || 0;
                 const minutes = Math.floor(dur / 60);
@@ -153,8 +165,8 @@ const mockSeries = {
 const result = parseSeriesDetails(
     sampleSeriesInfoPayload,
     'http://iptv.server.org:8080',
-    'testuser',
-    'testpass',
+    'testuser@iptv',
+    'pass#secret/123',
     mockSeries
 );
 
@@ -166,13 +178,31 @@ assert.strictEqual(result.seasons[1].episodes.length, 1, 'Expected 1 episode in 
 const ep1 = result.seasons[0].episodes[0];
 assert.strictEqual(ep1.id, 'ep_50101');
 assert.strictEqual(ep1.title, 'Büyük İpucu');
-assert.strictEqual(ep1.streamURL, 'http://iptv.server.org:8080/series/testuser/testpass/50101.mkv');
+// Verify mkv container was converted to mp4 for Apple AVPlayer compatibility
+assert.strictEqual(ep1.streamURL, 'http://iptv.server.org:8080/series/testuser%40iptv/pass%23secret%2F123/50101.mp4');
 assert.strictEqual(ep1.duration, 3120);
 assert.strictEqual(ep1.formattedDuration, '52 dk');
 
 const ep201 = result.seasons[1].episodes[0];
 assert.strictEqual(ep201.id, 'ep_50201', 'Handled numeric ID properly');
 assert.strictEqual(ep201.episodeNumber, 1, 'Handled string episode_num properly');
-assert.strictEqual(ep201.streamURL, 'http://iptv.server.org:8080/series/testuser/testpass/50201.mp4');
+assert.strictEqual(ep201.streamURL, 'http://iptv.server.org:8080/series/testuser%40iptv/pass%23secret%2F123/50201.mp4');
+
+// Test episode_id and stream_id alternative key fallback
+const altPayload = {
+    seasons: [{ season_number: 1, name: "1. Sezon" }],
+    episodes: {
+        "1": [
+            { episode_id: 991, episode_num: 1, title: "Alt Key Test", container_extension: "mkv" },
+            { stream_id: 992, episode_num: 2, title: "Stream ID Test" }
+        ]
+    }
+};
+
+const altResult = parseSeriesDetails(altPayload, 'http://iptv.server.org:8080', 'user', 'pass', mockSeries);
+assert.strictEqual(altResult.seasons[0].episodes[0].id, 'ep_991');
+assert.strictEqual(altResult.seasons[0].episodes[0].streamURL.endsWith('.mp4'), true, 'mkv converted to mp4');
+assert.strictEqual(altResult.seasons[0].episodes[1].id, 'ep_992');
 
 console.log('ALL SERIES & EPISODE TESTS PASSED SUCCESSFULLY!');
+

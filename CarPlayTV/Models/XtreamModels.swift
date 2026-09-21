@@ -418,6 +418,7 @@ public struct XtreamEpisodeInfo: Codable {
     public let plot: String?
     public let movieImage: String?
     public let rating: Double?
+    public let containerExtension: String?
 
     enum CodingKeys: String, CodingKey {
         case durationSecs = "duration_secs"
@@ -425,6 +426,7 @@ public struct XtreamEpisodeInfo: Codable {
         case plot
         case movieImage = "movie_image"
         case rating
+        case containerExtension = "container_extension"
     }
 
     public init(from decoder: Decoder) throws {
@@ -440,6 +442,7 @@ public struct XtreamEpisodeInfo: Codable {
         self.duration = try? container.decode(String.self, forKey: .duration)
         self.plot = try? container.decode(String.self, forKey: .plot)
         self.movieImage = try? container.decode(String.self, forKey: .movieImage)
+        self.containerExtension = try? container.decode(String.self, forKey: .containerExtension)
 
         if let r = try? container.decode(Double.self, forKey: .rating) {
             self.rating = r
@@ -461,6 +464,8 @@ public struct XtreamEpisodeItem: Codable, Identifiable {
 
     enum CodingKeys: String, CodingKey {
         case id
+        case episodeId = "episode_id"
+        case streamId = "stream_id"
         case episodeNum = "episode_num"
         case title
         case containerExtension = "container_extension"
@@ -470,12 +475,22 @@ public struct XtreamEpisodeItem: Codable, Identifiable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        // Resilient ID decoding: check id, episode_id, stream_id (both as Int and String)
         if let idInt = try? container.decode(Int.self, forKey: .id) {
             self.id = String(idInt)
-        } else if let idStr = try? container.decode(String.self, forKey: .id) {
+        } else if let idStr = try? container.decode(String.self, forKey: .id), !idStr.isEmpty {
             self.id = idStr
+        } else if let epIdInt = try? container.decode(Int.self, forKey: .episodeId) {
+            self.id = String(epIdInt)
+        } else if let epIdStr = try? container.decode(String.self, forKey: .episodeId), !epIdStr.isEmpty {
+            self.id = epIdStr
+        } else if let sIdInt = try? container.decode(Int.self, forKey: .streamId) {
+            self.id = String(sIdInt)
+        } else if let sIdStr = try? container.decode(String.self, forKey: .streamId), !sIdStr.isEmpty {
+            self.id = sIdStr
         } else {
-            self.id = UUID().uuidString
+            self.id = ""
         }
 
         if let epInt = try? container.decode(Int.self, forKey: .episodeNum) {
@@ -546,7 +561,26 @@ public struct XtreamSeriesInfoResponse: Decodable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.seasons = (try? container.decode([XtreamSeasonInfo].self, forKey: .seasons)) ?? []
-        self.episodes = (try? container.decode([String: [XtreamEpisodeItem]].self, forKey: .episodes)) ?? [:]
+
+        // Try decoding episodes as Dictionary [String: [LossyDecodable<XtreamEpisodeItem>]] or [String: [XtreamEpisodeItem]]
+        if let dict = try? container.decode([String: [LossyDecodable<XtreamEpisodeItem>]].self, forKey: .episodes) {
+            var res: [String: [XtreamEpisodeItem]] = [:]
+            for (k, v) in dict {
+                res[k] = v.compactMap { $0.value }.filter { !$0.id.isEmpty }
+            }
+            self.episodes = res
+        } else if let dict = try? container.decode([String: [XtreamEpisodeItem]].self, forKey: .episodes) {
+            self.episodes = dict
+        } else if let array = try? container.decode([[LossyDecodable<XtreamEpisodeItem>]].self, forKey: .episodes) {
+            // Some providers send episodes as array of seasons: [ [ep1, ep2], [ep3] ]
+            var res: [String: [XtreamEpisodeItem]] = [:]
+            for (idx, list) in array.enumerated() {
+                res["\(idx + 1)"] = list.compactMap { $0.value }.filter { !$0.id.isEmpty }
+            }
+            self.episodes = res
+        } else {
+            self.episodes = [:]
+        }
     }
 }
 

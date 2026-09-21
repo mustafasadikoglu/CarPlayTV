@@ -175,8 +175,9 @@ public struct VODDetailView: View {
     // MARK: - Play Buttons Section
     private var playButtonsSection: some View {
         VStack(spacing: 12) {
-            if activePlayableItem.lastPosition > 10 {
+            if activePlayableItem.lastPosition > 10 && activePlayableItem.isPlayable {
                 Button(action: {
+                    guard activePlayableItem.isPlayable else { return }
                     onPlay(activePlayableItem, false)
                     dismiss()
                 }) {
@@ -189,6 +190,7 @@ public struct VODDetailView: View {
                 .buttonStyle(LiquidGlassButtonStyle(isPrimary: true, minHeight: 54))
 
                 Button(action: {
+                    guard activePlayableItem.isPlayable else { return }
                     onPlay(activePlayableItem, true)
                     dismiss()
                 }) {
@@ -201,20 +203,29 @@ public struct VODDetailView: View {
                 .buttonStyle(LiquidGlassButtonStyle(isPrimary: false, minHeight: 48))
             } else {
                 Button(action: {
+                    guard activePlayableItem.isPlayable else { return }
                     onPlay(activePlayableItem, true)
                     dismiss()
                 }) {
                     HStack(spacing: 10) {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 20, weight: .bold))
-                        if currentSeries != nil {
-                            Text("1. Bölümü Oynat")
+                        if isLoadingEpisodes {
+                            ProgressView()
+                                .tint(.white)
+                            Text("Bölümler Yükleniyor...")
+                                .font(.system(size: 17, weight: .semibold))
                         } else {
-                            Text("Şimdi Oynat")
+                            Image(systemName: "play.fill")
+                                .font(.system(size: 20, weight: .bold))
+                            if currentSeries != nil {
+                                Text(activePlayableItem.isPlayable ? "1. Bölümü Oynat" : "Bölüm Yüklenemedi")
+                            } else {
+                                Text("Şimdi Oynat")
+                            }
                         }
                     }
                 }
                 .buttonStyle(LiquidGlassButtonStyle(isPrimary: true, minHeight: 54))
+                .disabled(isLoadingEpisodes || (!activePlayableItem.isPlayable && currentSeries != nil))
             }
         }
         .padding(.horizontal, 18)

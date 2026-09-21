@@ -73,6 +73,11 @@ public struct VODItem: Identifiable, Codable, Hashable {
         }
         return "\(minutes) dk"
     }
+
+    public var isPlayable: Bool {
+        let host = streamURL.host?.lowercased() ?? ""
+        return !host.contains("example.com") && !streamURL.absoluteString.isEmpty
+    }
 }
 
 public struct Series: Identifiable, Codable, Hashable {

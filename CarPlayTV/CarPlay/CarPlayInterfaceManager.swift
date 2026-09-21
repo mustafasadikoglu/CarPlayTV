@@ -439,10 +439,9 @@ public final class CarPlayInterfaceManager {
             }
 
             if sections.isEmpty {
-                let fallbackItem = CPListItem(text: "\(series.title) - Oynat", detailText: "İlk Bölüm")
-                fallbackItem.setImage(UIImage(systemName: "play.fill"))
-                fallbackItem.handler = { [weak self] _, completion in
-                    self?.playVODItem(series.sampleVODItem)
+                let fallbackItem = CPListItem(text: "Bölüm Bulunamadı", detailText: "Bu dizi için henüz oynatılabilir bölüm yok.")
+                fallbackItem.setImage(UIImage(systemName: "exclamationmark.circle"))
+                fallbackItem.handler = { _, completion in
                     completion()
                 }
                 sections.append(CPListSection(items: [fallbackItem]))

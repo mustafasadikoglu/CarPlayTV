@@ -43,6 +43,9 @@ public final class PlaybackManager: ObservableObject {
     @Published public var volume: Float = 1.0
     @Published public var playbackError: String?
 
+    /// Universal IPTV User-Agent matching popular IPTV players (avoids 403 Forbidden / AppleCoreMedia blocking)
+    public static let defaultUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+
     private var timeObserverToken: Any?
     private var statusObserver: NSKeyValueObservation?
     private var externalPlaybackObserver: NSKeyValueObservation?
@@ -148,14 +151,13 @@ public final class PlaybackManager: ObservableObject {
 
         PlaylistStore.shared.recordRecent(channel: channel)
 
-        // Configure asset with headers if present
-        let asset: AVURLAsset
-        if let userAgent = channel.httpUserAgent {
-            let headers = ["User-Agent": userAgent]
-            asset = AVURLAsset(url: channel.streamURL, options: ["AVURLAssetHTTPHeaderFieldsKey": headers])
-        } else {
-            asset = AVURLAsset(url: channel.streamURL)
-        }
+        // Configure asset with headers
+        let userAgent = channel.httpUserAgent ?? Self.defaultUserAgent
+        let headers: [String: String] = [
+            "User-Agent": userAgent,
+            "Accept": "*/*"
+        ]
+        let asset = AVURLAsset(url: channel.streamURL, options: ["AVURLAssetHTTPHeaderFieldsKey": headers])
 
         let playerItem = AVPlayerItem(asset: asset)
         // Stage 1: Ultra fast startup buffer (< 1s latency)
@@ -192,9 +194,13 @@ public final class PlaybackManager: ObservableObject {
         self.currentTime = startFromBeginning ? 0 : item.lastPosition
         self.duration = item.duration
         self.isBuffering = true
-        self.playbackError = nil
-
-        let playerItem = AVPlayerItem(url: item.streamURL)
+        let userAgent = Self.defaultUserAgent
+        let headers: [String: String] = [
+            "User-Agent": userAgent,
+            "Accept": "*/*"
+        ]
+        let asset = AVURLAsset(url: item.streamURL, options: ["AVURLAssetHTTPHeaderFieldsKey": headers])
+        let playerItem = AVPlayerItem(asset: asset)
         playerItem.preferredForwardBufferDuration = 2.0
         observePlayerItem(playerItem)
 
@@ -228,7 +234,9 @@ public final class PlaybackManager: ObservableObject {
                 case .failed:
                     self?.isBuffering = false
                     self?.isPlaying = false
-                    self?.playbackError = item.error?.localizedDescription ?? "Yayın oynatılamadı"
+                    let msg = item.error?.localizedDescription ?? "Yayın oynatılamadı"
+                    SanitizedLogger.error("Yayın başlatılamadı: \(msg), url: \(String(describing: (item.asset as? AVURLAsset)?.url))")
+                    self?.playbackError = msg
                 default:
                     break
                 }

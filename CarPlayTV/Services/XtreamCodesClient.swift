@@ -69,6 +69,12 @@ public final class XtreamCodesClient {
         return string.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? string
     }
 
+    private func encodePathComponent(_ string: String) -> String {
+        var allowed = CharacterSet.urlPathAllowed
+        allowed.remove(charactersIn: "/?#[]@!$&'()*+,;=")
+        return string.addingPercentEncoding(withAllowedCharacters: allowed) ?? string
+    }
+
     private func decodeResilient<T: Decodable>(_ type: T.Type, from data: Data) -> [T] {
         let decoder = JSONDecoder()
         if let direct = try? decoder.decode([T].self, from: data) {
@@ -171,9 +177,12 @@ public final class XtreamCodesClient {
 
         let streams = decodeResilient(XtreamLiveStream.self, from: data)
 
+        let pathUser = encodePathComponent(username)
+        let pathPass = encodePathComponent(password)
+
         // Convert XtreamLiveStream to uniform Channel model with mapped category names
         return streams.compactMap { stream -> Channel? in
-            let streamUrlString = "\(cleanBase)/live/\(username)/\(password)/\(stream.streamId).m3u8"
+            let streamUrlString = "\(cleanBase)/live/\(pathUser)/\(pathPass)/\(stream.streamId).m3u8"
             guard let streamURL = URL(string: streamUrlString) else { return nil }
 
             let logoURL = stream.streamIcon.flatMap { URL(string: $0) }
@@ -235,11 +244,16 @@ public final class XtreamCodesClient {
             throw URLError(.badServerResponse)
         }
 
-        let vodStreams = decodeResilient(XtreamVodStream.self, from: data)
+        let pathUser = encodePathComponent(username)
+        let pathPass = encodePathComponent(password)
 
         return vodStreams.compactMap { stream -> VODItem? in
-            let ext = stream.containerExtension ?? "mp4"
-            let streamUrlString = "\(cleanBase)/movie/\(username)/\(password)/\(stream.streamId).\(ext)"
+            var ext = stream.containerExtension?.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) ?? "mp4"
+            if ext == "mkv" || ext == "avi" || ext.isEmpty {
+                // Apple AVPlayer cannot play MKV or AVI containers. Requesting mp4 triggers server-side MP4 streaming
+                ext = "mp4"
+            }
+            let streamUrlString = "\(cleanBase)/movie/\(pathUser)/\(pathPass)/\(stream.streamId).\(ext)"
             guard let streamURL = URL(string: streamUrlString) else { return nil }
 
             let poster = stream.streamIcon.flatMap { URL(string: $0) }
@@ -345,6 +359,9 @@ public final class XtreamCodesClient {
         var seasonsDict: [Int: [VODItem]] = [:]
         var seasonNames: [Int: String] = [:]
 
+        let pathUser = encodePathComponent(username)
+        let pathPass = encodePathComponent(password)
+
         if let details = details {
             for s in details.seasons {
                 seasonNames[s.seasonNumber] = s.name
@@ -355,8 +372,11 @@ public final class XtreamCodesClient {
                 var vodEpisodes: [VODItem] = []
 
                 for ep in epList {
-                    let ext = ep.containerExtension ?? "mp4"
-                    let streamUrlString = "\(cleanBase)/series/\(username)/\(password)/\(ep.id).\(ext)"
+                    var ext = (ep.containerExtension ?? ep.info?.containerExtension)?.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) ?? "mp4"
+                    if ext == "mkv" || ext == "avi" || ext.isEmpty {
+                        ext = "mp4"
+                    }
+                    let streamUrlString = "\(cleanBase)/series/\(pathUser)/\(pathPass)/\(ep.id).\(ext)"
                     guard let streamURL = URL(string: streamUrlString) else { continue }
 
                     let posterURL = ep.info?.movieImage.flatMap { URL(string: $0) } ?? series.coverURL
