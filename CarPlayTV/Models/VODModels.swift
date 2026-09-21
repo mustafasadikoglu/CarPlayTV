@@ -110,6 +110,22 @@ public struct Series: Identifiable, Codable, Hashable {
         self.categoryName = categoryName
         self.seasons = seasons
     }
+
+    public var sampleVODItem: VODItem {
+        VODItem(
+            id: id,
+            title: title,
+            streamURL: URL(string: "https://example.com")!,
+            posterURL: coverURL,
+            backdropURL: backdropURL,
+            rating: rating,
+            year: year,
+            genre: genre,
+            plot: plot,
+            categoryName: categoryName,
+            type: .seriesEpisode
+        )
+    }
 }
 
 public struct SeriesSeason: Identifiable, Codable, Hashable {

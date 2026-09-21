@@ -40,6 +40,10 @@ public struct VODHomeView: View {
         return list
     }
 
+    private var relevantCategories: [VODCategory] {
+        store.categories.filter { $0.isSeries == (selectedTab == 1) }
+    }
+
     public var body: some View {
         NavigationStack {
             ScrollView {
@@ -49,7 +53,7 @@ public struct VODHomeView: View {
                         Text("Filmler (\(store.movies.count))").tag(0)
                         Text("Diziler (\(store.series.count))").tag(1)
                     }
-                    .pickerStyle(SegmentedPickerStyle())
+                    .pickerStyle(.segmented)
                     .padding(.horizontal)
 
                     // Continue Watching Row (if any)
@@ -88,8 +92,7 @@ public struct VODHomeView: View {
                                     .cornerRadius(16)
                             }
 
-                            let relevantCats = store.categories.filter { $0.isSeries == (selectedTab == 1) }
-                            ForEach(relevantCats) { cat in
+                            ForEach(relevantCategories) { cat in
                                 Button(action: {
                                     selectedCategory = cat.categoryName
                                 }) {
@@ -128,23 +131,7 @@ public struct VODHomeView: View {
                         } else {
                             LazyVGrid(columns: columns, spacing: 16) {
                                 ForEach(filteredSeries) { series in
-                                    let sampleItem = VODItem(
-                                        id: series.id,
-                                        title: series.title,
-                                        streamURL: URL(string: "https://example.com")!,
-                                        posterURL: series.coverURL,
-                                        rating: series.rating,
-                                        year: series.year,
-                                        genre: series.genre,
-                                        categoryName: series.categoryName,
-                                        type: .seriesEpisode
-                                    )
-                                    VODCardView(item: sampleItem) {
-                                        selectedSeriesForDetail = series
-                                        if let firstEp = series.seasons.first?.episodes.first {
-                                            selectedItemForDetail = firstEp
-                                        }
-                                    }
+                                    seriesCard(for: series)
                                 }
                             }
                             .padding(.horizontal)
@@ -163,6 +150,15 @@ public struct VODHomeView: View {
             }
             .fullScreenCover(isPresented: $isPresentingFullscreenPlayer) {
                 FullscreenPlayerView()
+            }
+        }
+    }
+
+    private func seriesCard(for series: Series) -> some View {
+        VODCardView(item: series.sampleVODItem) {
+            selectedSeriesForDetail = series
+            if let firstEp = series.seasons.first?.episodes.first {
+                selectedItemForDetail = firstEp
             }
         }
     }

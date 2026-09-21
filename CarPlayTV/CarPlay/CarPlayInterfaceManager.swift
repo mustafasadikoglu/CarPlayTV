@@ -101,7 +101,7 @@ public final class CarPlayInterfaceManager {
         // 6. Tab Bar Template
         let tabBar = CPTabBarTemplate(templates: [grid, categories, movies, favorites, recents])
         self.rootTabBar = tabBar
-        controller.setRootTemplate(tabBar, animated: true, completion: nil)
+        controller.setRootTemplate(tabBar, animated: true)
     }
 
     // MARK: - Templates Creation
@@ -201,7 +201,7 @@ public final class CarPlayInterfaceManager {
             }
             item.handler = { [weak self] _, completion in
                 XtreamAccountStore.shared.setActiveAccount(account: acc)
-                controller.popTemplate(animated: true, completion: nil)
+                controller.popTemplate(animated: true)
                 completion()
             }
             return item
@@ -209,7 +209,7 @@ public final class CarPlayInterfaceManager {
 
         let section = CPListSection(items: items)
         let template = CPListTemplate(title: "Xtream Hesapları", sections: [section])
-        controller.pushTemplate(template, animated: true, completion: nil)
+        controller.pushTemplate(template, animated: true)
     }
 
     private func makeRecentsTemplate() -> CPListTemplate {
@@ -291,7 +291,7 @@ public final class CarPlayInterfaceManager {
 
         if let controller = interfaceController {
             let nowPlaying = CPNowPlayingTemplate.shared
-            controller.pushTemplate(nowPlaying, animated: true, completion: nil)
+            controller.pushTemplate(nowPlaying, animated: true)
         }
     }
 
@@ -301,7 +301,7 @@ public final class CarPlayInterfaceManager {
         let items = channels.map { makeListItem(for: $0) }
         let section = CPListSection(items: items)
         let template = CPListTemplate(title: category, sections: [section])
-        controller.pushTemplate(template, animated: true, completion: nil)
+        controller.pushTemplate(template, animated: true)
     }
 
     private func makeListItem(for channel: Channel) -> CPListItem {
@@ -348,7 +348,7 @@ public final class CarPlayInterfaceManager {
         // Push Now Playing template or CarPlay video screen
         if let controller = interfaceController {
             let nowPlaying = CPNowPlayingTemplate.shared
-            controller.pushTemplate(nowPlaying, animated: true, completion: nil)
+            controller.pushTemplate(nowPlaying, animated: true)
         }
     }
 

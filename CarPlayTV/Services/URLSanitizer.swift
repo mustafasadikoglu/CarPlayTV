@@ -1,5 +1,4 @@
 import Foundation
-import os.log
 
 /// Sanitizes sensitive credentials (passwords, tokens, API keys) from URLs and log messages.
 public struct URLSanitizer {
@@ -57,39 +56,27 @@ public struct URLSanitizer {
 
 /// Zero-Leakage Logger: Automatically sanitizes messages before logging to system console.
 public final class SanitizedLogger {
-    private static let logger = Logger(subsystem: "com.carplaytv.app", category: "Security")
-
     public static func debug(_ message: String) {
-        let safe = URLSanitizer.sanitize(message)
-        logger.debug("\(safe, privacy: .public)")
         #if DEBUG
+        let safe = URLSanitizer.sanitize(message)
         print("🔍 [DEBUG] \(safe)")
         #endif
     }
 
     public static func info(_ message: String) {
         let safe = URLSanitizer.sanitize(message)
-        logger.info("\(safe, privacy: .public)")
-        #if DEBUG
         print("ℹ️ [INFO] \(safe)")
-        #endif
     }
 
     public static func warning(_ message: String) {
         let safe = URLSanitizer.sanitize(message)
-        logger.warning("\(safe, privacy: .public)")
-        #if DEBUG
         print("⚠️ [WARN] \(safe)")
-        #endif
     }
 
     public static func error(_ message: String, error: Error? = nil) {
         let safe = URLSanitizer.sanitize(message)
         let errorDetails = error != nil ? URLSanitizer.sanitize(error!.localizedDescription) : ""
         let full = errorDetails.isEmpty ? safe : "\(safe) - Error: \(errorDetails)"
-        logger.error("\(full, privacy: .public)")
-        #if DEBUG
         print("❌ [ERROR] \(full)")
-        #endif
     }
 }

@@ -10,6 +10,10 @@ public struct ChannelEPGSheetView: View {
         self.channel = channel
     }
 
+    private var channelPrograms: [EPGProgram] {
+        epgStore.programs(for: channel)
+    }
+
     public var body: some View {
         NavigationStack {
             ScrollView {
@@ -67,16 +71,14 @@ public struct ChannelEPGSheetView: View {
                     .padding(.horizontal)
 
                     // Programs Timeline List
-                    let programs = epgStore.programs(for: channel)
-
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Günün Yayın Akışı (\(programs.count) Program)")
+                        Text("Günün Yayın Akışı (\(channelPrograms.count) Program)")
                             .font(.headline)
                             .foregroundColor(.primary)
                             .padding(.horizontal)
 
                         LazyVStack(spacing: 10) {
-                            ForEach(programs) { program in
+                            ForEach(channelPrograms) { program in
                                 programRow(program)
                             }
                         }
@@ -98,11 +100,10 @@ public struct ChannelEPGSheetView: View {
         }
     }
 
-    @ViewBuilder
     private func programRow(_ program: EPGProgram) -> some View {
         let isAiring = program.isCurrentlyAiring
 
-        VStack(alignment: .leading, spacing: 8) {
+        return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top) {
                 // Time Range Pill
                 Text(program.timeRangeString)

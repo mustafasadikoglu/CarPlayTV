@@ -141,7 +141,7 @@ public struct VideoControlsOverlayView: View {
                                 .clipShape(Circle())
                         }
 
-                        if playback.isLiveStream, playback.currentChannel != nil {
+                        if playback.isLiveStream && playback.currentChannel != nil {
                             Button(action: {
                                 isShowingEPGSheet = true
                             }) {
