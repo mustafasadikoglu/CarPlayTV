@@ -514,6 +514,16 @@ public struct XtreamEpisodeItem: Codable, Identifiable {
 
         self.info = try? container.decode(XtreamEpisodeInfo.self, forKey: .info)
     }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(episodeNum, forKey: .episodeNum)
+        try container.encode(title, forKey: .title)
+        try container.encodeIfPresent(containerExtension, forKey: .containerExtension)
+        try container.encode(season, forKey: .season)
+        try container.encodeIfPresent(info, forKey: .info)
+    }
 }
 
 public struct XtreamSeasonInfo: Codable, Identifiable {
