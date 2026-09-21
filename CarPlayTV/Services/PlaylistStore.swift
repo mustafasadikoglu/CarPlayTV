@@ -110,9 +110,12 @@ public final class PlaylistStore: ObservableObject {
                     type: .xtream,
                     xtreamServer: server,
                     xtreamUsername: user,
-                    xtreamPassword: pass,
+                    xtreamPassword: nil, // Şifre JSON dosyasında düz metin olarak tutulmaz
                     channelCount: fetched.count
                 )
+                // Şifre iOS Keychain (Secure Enclave) donanım anahtarlığında saklanır
+                KeychainHelper.shared.saveString(key: "playlist_pass_\(playlist.id)", value: pass)
+                
                 self.playlists.append(playlist)
                 self.channels.append(contentsOf: fetched)
                 self.updateDerivedData()
@@ -120,14 +123,27 @@ public final class PlaylistStore: ObservableObject {
                 self.savePlaylistsAsync()
                 self.parseProgressText = nil
                 self.isLoading = false
+                SanitizedLogger.info("Xtream listesi eklendi: \(name), \(fetched.count) kanal.")
             }
         } catch {
             await MainActor.run {
-                self.errorMessage = "Xtream sunucusuna bağlanılamadı: \(error.localizedDescription)"
+                let safeErr = URLSanitizer.sanitize(error.localizedDescription)
+                self.errorMessage = "Xtream sunucusuna bağlanılamadı: \(safeErr)"
+                SanitizedLogger.error("Xtream bağlantı hatası", error: error)
                 self.parseProgressText = nil
                 self.isLoading = false
             }
         }
+    }
+
+    public func deletePlaylist(at offsets: IndexSet) {
+        for index in offsets {
+            guard index < playlists.count else { continue }
+            let pl = playlists[index]
+            KeychainHelper.shared.delete(key: "playlist_pass_\(pl.id)")
+        }
+        playlists.remove(atOffsets: offsets)
+        savePlaylistsAsync()
     }
 
     public func toggleFavorite(channelId: String) {

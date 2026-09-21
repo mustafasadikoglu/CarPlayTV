@@ -87,4 +87,9 @@ public struct Playlist: Identifiable, Codable {
         self.lastUpdated = lastUpdated
         self.channelCount = channelCount
     }
+
+    /// Retrieves the password securely from Keychain, falling back to legacy memory property if present
+    public var securePassword: String? {
+        KeychainHelper.shared.readString(key: "playlist_pass_\(id)") ?? xtreamPassword
+    }
 }

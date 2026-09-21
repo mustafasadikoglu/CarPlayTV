@@ -27,6 +27,8 @@ const files = [
     { name: "VODStore.swift", path: "CarPlayTV/Services/VODStore.swift", isSource: true },
     { name: "NetworkMonitor.swift", path: "CarPlayTV/Services/NetworkMonitor.swift", isSource: true },
     { name: "ImageCacheManager.swift", path: "CarPlayTV/Services/ImageCacheManager.swift", isSource: true },
+    { name: "KeychainHelper.swift", path: "CarPlayTV/Services/KeychainHelper.swift", isSource: true },
+    { name: "URLSanitizer.swift", path: "CarPlayTV/Services/URLSanitizer.swift", isSource: true },
     { name: "CarPlaySceneDelegate.swift", path: "CarPlayTV/CarPlay/CarPlaySceneDelegate.swift", isSource: true },
     { name: "CarPlayInterfaceManager.swift", path: "CarPlayTV/CarPlay/CarPlayInterfaceManager.swift", isSource: true },
     { name: "CarPlayVideoWindowController.swift", path: "CarPlayTV/CarPlay/CarPlayVideoWindowController.swift", isSource: true },
@@ -53,7 +55,8 @@ const frameworks = [
     "AVFoundation.framework",
     "AVKit.framework",
     "MediaPlayer.framework",
-    "Network.framework"
+    "Network.framework",
+    "Security.framework"
 ];
 
 for (const f of files) {

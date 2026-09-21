@@ -16,19 +16,48 @@ public final class XtreamCodesClient {
         return clean
     }
 
+    // MARK: - Secure Keychain Storage
+    public func saveCredentials(server: String, username: String, password: String) {
+        let key = credentialKey(server: server, username: username)
+        KeychainHelper.shared.saveString(key: key, value: password)
+    }
+
+    public func getStoredPassword(server: String, username: String) -> String? {
+        let key = credentialKey(server: server, username: username)
+        return KeychainHelper.shared.readString(key: key)
+    }
+
+    public func deleteCredentials(server: String, username: String) {
+        let key = credentialKey(server: server, username: username)
+        KeychainHelper.shared.delete(key: key)
+    }
+
+    private func credentialKey(server: String, username: String) -> String {
+        let clean = cleanServerURL(server)
+        return "xtream_\(clean)_\(username)"
+    }
+
     public func authenticate(server: String, username: String, password: String) async throws -> XtreamAuthResponse {
         let cleanBase = cleanServerURL(server)
-        guard let url = URL(string: "\(cleanBase)/player_api.php?username=\(username)&password=\(password)") else {
+        let urlString = "\(cleanBase)/player_api.php?username=\(username)&password=\(password)"
+        guard let url = URL(string: urlString) else {
+            SanitizedLogger.error("Geçersiz Xtream sunucu URL'si: \(urlString)")
             throw URLError(.badURL)
         }
 
+        SanitizedLogger.info("Xtream sunucusuna bağlanılıyor: \(urlString)")
         let (data, response) = try await URLSession.shared.data(from: url)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+            SanitizedLogger.error("Xtream sunucu hatası: \((response as? HTTPURLResponse)?.statusCode ?? -1)")
             throw URLError(.badServerResponse)
         }
 
         let decoder = JSONDecoder()
-        return try decoder.decode(XtreamAuthResponse.self, from: data)
+        let auth = try decoder.decode(XtreamAuthResponse.self, from: data)
+        // Başarılı girişte şifreyi iOS Keychain'e kaydet
+        saveCredentials(server: server, username: username, password: password)
+        SanitizedLogger.info("Xtream kimlik doğrulaması başarılı. Kimlik bilgileri Keychain'e kaydedildi.")
+        return auth
     }
 
     public func fetchLiveCategories(server: String, username: String, password: String) async throws -> [XtreamCategory] {
