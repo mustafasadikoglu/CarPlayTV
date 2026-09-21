@@ -14,27 +14,16 @@ public struct VODCardView: View {
                             .fill(Color(UIColor.secondarySystemBackground))
                             .aspectRatio(2/3, contentMode: .fit)
 
-                        if let poster = item.posterURL {
-                            AsyncImage(url: poster) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .scaledToFill()
-                                case .empty:
-                                    ProgressView()
-                                default:
-                                    Image(systemName: "film")
-                                        .font(.largeTitle)
-                                        .foregroundColor(.gray)
-                                }
-                            }
-                        } else {
-                            Image(systemName: "film")
-                                .font(.largeTitle)
-                                .foregroundColor(.gray)
-                        }
+                    CachedAsyncImage(url: item.posterURL, targetSize: CGSize(width: 300, height: 450)) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        Image(systemName: "film")
+                            .font(.largeTitle)
+                            .foregroundColor(.gray)
                     }
+                }
                     .frame(maxWidth: .infinity)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
 

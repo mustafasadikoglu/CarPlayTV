@@ -213,7 +213,22 @@ public final class CarPlayInterfaceManager {
         }
 
         let listItem = CPListItem(text: item.title, detailText: subtitle)
-        listItem.setImage(UIImage(systemName: "film"))
+
+        if let posterURL = item.posterURL, let cached = ImageCacheManager.shared.cachedImageFromMemory(for: posterURL) {
+            listItem.setImage(cached)
+        } else {
+            listItem.setImage(UIImage(systemName: "film"))
+            if let posterURL = item.posterURL {
+                Task {
+                    if let img = await ImageCacheManager.shared.loadImage(from: posterURL, targetSize: CGSize(width: 60, height: 90)) {
+                        await MainActor.run {
+                            listItem.setImage(img)
+                        }
+                    }
+                }
+            }
+        }
+
         listItem.handler = { [weak self] _, completion in
             self?.playVODItem(item)
             completion()
@@ -245,7 +260,22 @@ public final class CarPlayInterfaceManager {
 
     private func makeListItem(for channel: Channel) -> CPListItem {
         let item = CPListItem(text: channel.name, detailText: channel.groupTitle)
-        item.setImage(UIImage(systemName: "play.tv.fill"))
+
+        if let logoURL = channel.logoURL, let cached = ImageCacheManager.shared.cachedImageFromMemory(for: logoURL) {
+            item.setImage(cached)
+        } else {
+            item.setImage(UIImage(systemName: "play.tv.fill"))
+            if let logoURL = channel.logoURL {
+                Task {
+                    if let img = await ImageCacheManager.shared.loadImage(from: logoURL, targetSize: CGSize(width: 60, height: 60)) {
+                        await MainActor.run {
+                            item.setImage(img)
+                        }
+                    }
+                }
+            }
+        }
+
         item.handler = { [weak self] _, completion in
             self?.playChannel(channel)
             completion()

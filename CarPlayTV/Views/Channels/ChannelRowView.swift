@@ -15,22 +15,13 @@ public struct ChannelRowView: View {
                         .fill(Color(UIColor.secondarySystemBackground))
                         .frame(width: 50, height: 50)
 
-                    if let logoUrl = channel.logoURL {
-                        AsyncImage(url: logoUrl) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 42, height: 42)
-                                    .cornerRadius(6)
-                            default:
-                                Image(systemName: "tv")
-                                    .font(.title3)
-                                    .foregroundColor(.gray)
-                            }
-                        }
-                    } else {
+                    CachedAsyncImage(url: channel.logoURL, targetSize: CGSize(width: 84, height: 84)) { image in
+                        image
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 42, height: 42)
+                            .cornerRadius(6)
+                    } placeholder: {
                         Image(systemName: "tv")
                             .font(.title3)
                             .foregroundColor(.gray)

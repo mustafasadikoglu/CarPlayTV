@@ -14,22 +14,13 @@ public struct VODDetailView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     // Backdrop / Poster Image
                     ZStack(alignment: .bottomLeading) {
-                        if let backdrop = item.backdropURL ?? item.posterURL {
-                            AsyncImage(url: backdrop) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(height: 240)
-                                        .clipped()
-                                default:
-                                    Rectangle()
-                                        .fill(Color(UIColor.secondarySystemBackground))
-                                        .frame(height: 240)
-                                }
-                            }
-                        } else {
+                        CachedAsyncImage(url: item.backdropURL ?? item.posterURL, targetSize: CGSize(width: 600, height: 350)) { image in
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(height: 240)
+                                .clipped()
+                        } placeholder: {
                             Rectangle()
                                 .fill(Color(UIColor.secondarySystemBackground))
                                 .frame(height: 240)
