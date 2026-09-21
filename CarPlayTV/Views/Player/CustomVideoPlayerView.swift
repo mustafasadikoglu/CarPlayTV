@@ -7,18 +7,24 @@ public struct CustomVideoPlayerView: UIViewControllerRepresentable {
 
     public init() {}
 
-    public func makeUIViewController(context: Context) -> PlayerViewController {
-        let controller = PlayerViewController()
-        controller.setPlayer(playbackManager.player)
-        controller.setVideoGravity(playbackManager.aspectRatio.gravity)
+    public func makeUIViewController(context: Context) -> AVPlayerViewController {
+        let controller = AVPlayerViewController()
+        controller.player = playbackManager.player
+        controller.showsPlaybackControls = false
+        controller.videoGravity = playbackManager.aspectRatio.gravity
+        controller.allowsPictureInPicturePlayback = true
+        controller.canStartPictureInPictureAutomaticallyFromInline = true
+        controller.updatesNowPlayingInfoCenter = false
+        controller.view.backgroundColor = .black
         return controller
     }
 
-    public func updateUIViewController(_ uiViewController: PlayerViewController, context: Context) {
-        uiViewController.setVideoGravity(playbackManager.aspectRatio.gravity)
-        // Ensure player instance is linked
-        if uiViewController.player != playbackManager.player {
-            uiViewController.setPlayer(playbackManager.player)
+    public func updateUIViewController(_ controller: AVPlayerViewController, context: Context) {
+        if controller.player !== playbackManager.player {
+            controller.player = playbackManager.player
+        }
+        if controller.videoGravity != playbackManager.aspectRatio.gravity {
+            controller.videoGravity = playbackManager.aspectRatio.gravity
         }
     }
 }
@@ -26,7 +32,11 @@ public struct CustomVideoPlayerView: UIViewControllerRepresentable {
 public final class PlayerViewController: UIViewController {
     private var playerLayer: AVPlayerLayer?
     private var pipController: AVPictureInPictureController?
-    public private(set) var player: AVPlayer?
+    public var player: AVPlayer? {
+        didSet {
+            playerLayer?.player = player
+        }
+    }
 
     public override func viewDidLoad() {
         super.viewDidLoad()
@@ -41,11 +51,15 @@ public final class PlayerViewController: UIViewController {
     }
 
     private func setupLayer() {
-        let layer = AVPlayerLayer()
-        layer.frame = view.bounds
-        layer.videoGravity = .resizeAspect
-        view.layer.addSublayer(layer)
-        self.playerLayer = layer
+        if playerLayer == nil {
+            let layer = AVPlayerLayer(player: player)
+            layer.frame = view.bounds
+            layer.videoGravity = .resizeAspect
+            view.layer.addSublayer(layer)
+            self.playerLayer = layer
+        } else {
+            playerLayer?.player = player
+        }
     }
 
     private func setupPiP() {
@@ -55,7 +69,11 @@ public final class PlayerViewController: UIViewController {
 
     public func setPlayer(_ player: AVPlayer) {
         self.player = player
-        playerLayer?.player = player
+        if playerLayer == nil {
+            setupLayer()
+        } else {
+            playerLayer?.player = player
+        }
     }
 
     public func setVideoGravity(_ gravity: AVLayerVideoGravity) {
@@ -66,3 +84,4 @@ public final class PlayerViewController: UIViewController {
         pipController?.startPictureInPicture()
     }
 }
+

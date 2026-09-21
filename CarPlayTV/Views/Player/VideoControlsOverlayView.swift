@@ -23,265 +23,25 @@ public struct VideoControlsOverlayView: View {
                 }
 
             if areControlsVisible {
-                VStack {
-                    // Top Bar
-                    HStack(spacing: 12) {
-                        if let onClose = onClose {
-                            Button(action: onClose) {
-                                Image(systemName: "chevron.down.circle.fill")
-                                    .font(.title2)
-                                    .foregroundColor(.white.opacity(0.85))
-                            }
-                        }
-
-                        if playback.isLiveStream {
-                            if let channel = playback.currentChannel {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    HStack(spacing: 6) {
-                                        Circle()
-                                            .fill(Color.red)
-                                            .frame(width: 8, height: 8)
-                                        Text("CANLI")
-                                            .font(.caption2.bold())
-                                            .foregroundColor(.red)
-
-                                        Text("•")
-                                            .foregroundColor(.white.opacity(0.4))
-
-                                        Text(channel.groupTitle)
-                                            .font(.caption)
-                                            .foregroundColor(.white.opacity(0.7))
-                                    }
-
-                                    HStack(spacing: 6) {
-                                        Text(channel.name)
-                                            .font(.headline)
-                                            .foregroundColor(.white)
-                                            .lineLimit(1)
-
-                                        if let prog = epgStore.currentProgram(for: channel) {
-                                            Text("•")
-                                                .foregroundColor(.white.opacity(0.4))
-                                            Text(prog.title)
-                                                .font(.subheadline)
-                                                .foregroundColor(.white.opacity(0.9))
-                                                .lineLimit(1)
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            if let vod = playback.currentVODItem {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    HStack(spacing: 6) {
-                                        Text(vod.type == .movie ? "FİLM" : "DİZİ")
-                                            .font(.caption2.bold())
-                                            .foregroundColor(.accentColor)
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 2)
-                                            .background(Color.accentColor.opacity(0.25))
-                                            .cornerRadius(4)
-
-                                        Text("•")
-                                            .foregroundColor(.white.opacity(0.4))
-
-                                        Text(vod.categoryName)
-                                            .font(.caption)
-                                            .foregroundColor(.white.opacity(0.7))
-                                    }
-
-                                    Text(vod.title)
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-                                        .lineLimit(1)
-                                }
-                            }
-                        }
-
-                        Spacer()
-
-                        // CarPlay status indicator
-                        if playback.isCarPlayConnected {
-                            HStack(spacing: 4) {
-                                Image(systemName: "car.fill")
-                                    .font(.caption)
-                                Text(playback.isExternalVideoActive ? "CarPlay Video" : "CarPlay Bağlı")
-                                    .font(.caption2.bold())
-                            }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(playback.isExternalVideoActive ? Color.green.opacity(0.3) : Color.blue.opacity(0.3))
-                            .foregroundColor(playback.isExternalVideoActive ? .green : .blue)
-                            .cornerRadius(8)
-                        }
-
-                        // Aspect ratio toggle button
-                        Menu {
-                            ForEach(VideoAspectRatio.allCases, id: \.self) { ratio in
-                                Button(action: {
-                                    playback.aspectRatio = ratio
-                                    CarPlayVideoWindowController.shared.updateAspectRatio(ratio)
-                                }) {
-                                    HStack {
-                                        Text(ratio.rawValue)
-                                        if playback.aspectRatio == ratio {
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
-                                }
-                            }
-                        } label: {
-                            Image(systemName: "aspectratio")
-                                .font(.title3)
-                                .foregroundColor(.white.opacity(0.9))
-                                .padding(8)
-                                .background(.ultraThinMaterial)
-                                .clipShape(Circle())
-                        }
-
-                        if playback.isLiveStream && playback.currentChannel != nil {
-                            Button(action: {
-                                isShowingEPGSheet = true
-                            }) {
-                                Image(systemName: "calendar.badge.clock")
-                                    .font(.title3)
-                                    .foregroundColor(.white.opacity(0.9))
-                                    .padding(8)
-                                    .background(.ultraThinMaterial)
-                                    .clipShape(Circle())
-                            }
-                        }
-                    }
-                    .padding()
-                    .background(
-                        LinearGradient(
-                            colors: [.black.opacity(0.8), .clear],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
+                VStack(spacing: 0) {
+                    // Top Floating Liquid Glass Island
+                    topFloatingBar
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
 
                     Spacer()
 
                     // Center Buffering or Error Indicator
-                    if playback.isBuffering {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(1.6)
-                            .padding(24)
-                            .background(.ultraThinMaterial)
-                            .cornerRadius(16)
-                    } else if let error = playback.playbackError {
-                        VStack(spacing: 8) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.yellow)
-                                .font(.largeTitle)
-                            Text(error)
-                                .font(.subheadline)
-                                .foregroundColor(.white)
-                                .multilineTextAlignment(.center)
-                        }
-                        .padding()
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(12)
-                    }
+                    centerStatusView
 
                     Spacer()
 
-                    // Bottom Area (Scrubber for VOD + Controls)
-                    VStack(spacing: 12) {
-                        // VOD Scrubber Slider
-                        if !playback.isLiveStream && playback.duration > 0 {
-                            VStack(spacing: 4) {
-                                Slider(
-                                    value: Binding(
-                                        get: { playback.currentTime },
-                                        set: { playback.seek(to: $0) }
-                                    ),
-                                    in: 0...max(playback.duration, 1)
-                                )
-                                .accentColor(.accentColor)
-
-                                HStack {
-                                    Text(formatTime(playback.currentTime))
-                                        .font(.caption2.monospacedDigit())
-                                        .foregroundColor(.white.opacity(0.8))
-                                    Spacer()
-                                    Text(formatTime(playback.duration))
-                                        .font(.caption2.monospacedDigit())
-                                        .foregroundColor(.white.opacity(0.8))
-                                }
-                            }
-                            .padding(.horizontal, 24)
-                        }
-
-                        // Playback Buttons
-                        HStack(spacing: 40) {
-                            if playback.isLiveStream {
-                                // Previous Channel
-                                Button(action: {
-                                    playback.playPreviousChannel()
-                                    resetTimer()
-                                }) {
-                                    Image(systemName: "backward.end.fill")
-                                        .font(.title2)
-                                        .foregroundColor(.white)
-                                }
-                            } else {
-                                // Skip Backward 10s
-                                Button(action: {
-                                    playback.skipBackward(seconds: 10)
-                                    resetTimer()
-                                }) {
-                                    Image(systemName: "gobackward.10")
-                                        .font(.title)
-                                        .foregroundColor(.white)
-                                }
-                            }
-
-                            // Play / Pause
-                            Button(action: {
-                                playback.togglePlayPause()
-                                resetTimer()
-                            }) {
-                                Image(systemName: playback.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                                    .font(.system(size: 56))
-                                    .foregroundColor(.white)
-                            }
-
-                            if playback.isLiveStream {
-                                // Next Channel
-                                Button(action: {
-                                    playback.playNextChannel()
-                                    resetTimer()
-                                }) {
-                                    Image(systemName: "forward.end.fill")
-                                        .font(.title2)
-                                        .foregroundColor(.white)
-                                }
-                            } else {
-                                // Skip Forward 10s
-                                Button(action: {
-                                    playback.skipForward(seconds: 10)
-                                    resetTimer()
-                                }) {
-                                    Image(systemName: "goforward.10")
-                                        .font(.title)
-                                        .foregroundColor(.white)
-                                }
-                            }
-                        }
-                    }
-                    .padding(.bottom, 32)
-                    .background(
-                        LinearGradient(
-                            colors: [.clear, .black.opacity(0.85)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
+                    // Bottom Floating Liquid Glass Dock
+                    bottomFloatingDock
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 24)
                 }
-                .transition(.opacity.animation(.easeInOut(duration: 0.2)))
+                .transition(.opacity.combined(with: .scale(scale: 0.98)).animation(.easeInOut(duration: 0.22)))
             }
         }
         .onAppear {
@@ -292,6 +52,348 @@ public struct VideoControlsOverlayView: View {
                 ChannelEPGSheetView(channel: channel)
             }
         }
+    }
+
+    // MARK: - Top Floating Glass Bar
+    private var topFloatingBar: some View {
+        HStack(spacing: 12) {
+            if let onClose = onClose {
+                Button(action: onClose) {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white.opacity(0.9))
+                        .frame(width: 36, height: 36)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle().stroke(Color.white.opacity(0.25), lineWidth: 1)
+                        )
+                }
+            }
+
+            if playback.isLiveStream {
+                if let channel = playback.currentChannel {
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 7, height: 7)
+                                .shadow(color: .red.opacity(0.8), radius: 4, x: 0, y: 0)
+
+                            Text("CANLI")
+                                .font(.caption2.bold())
+                                .foregroundColor(.red)
+
+                            Text("•")
+                                .foregroundColor(.white.opacity(0.3))
+
+                            Text(channel.groupTitle)
+                                .font(.caption2)
+                                .foregroundColor(.white.opacity(0.75))
+                                .lineLimit(1)
+                        }
+
+                        HStack(spacing: 6) {
+                            Text(channel.name)
+                                .font(.subheadline.bold())
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+
+                            if let prog = epgStore.currentProgram(for: channel) {
+                                Text("•")
+                                    .foregroundColor(.white.opacity(0.3))
+                                Text(prog.title)
+                                    .font(.caption)
+                                    .foregroundColor(.white.opacity(0.85))
+                                    .lineLimit(1)
+                            }
+                        }
+                    }
+                }
+            } else {
+                if let vod = playback.currentVODItem {
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 6) {
+                            Text(vod.type == .movie ? "FİLM" : "DİZİ")
+                                .font(.caption2.bold())
+                                .foregroundColor(.accentColor)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.accentColor.opacity(0.2))
+                                .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                            Text("•")
+                                .foregroundColor(.white.opacity(0.3))
+
+                            Text(vod.categoryName)
+                                .font(.caption2)
+                                .foregroundColor(.white.opacity(0.75))
+                                .lineLimit(1)
+                        }
+
+                        Text(vod.title)
+                            .font(.subheadline.bold())
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                    }
+                }
+            }
+
+            Spacer()
+
+            // CarPlay indicator
+            if playback.isCarPlayConnected {
+                HStack(spacing: 4) {
+                    Image(systemName: "car.fill")
+                        .font(.caption2)
+                    Text(playback.isExternalVideoActive ? "CarPlay Video" : "CarPlay")
+                        .font(.caption2.bold())
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(playback.isExternalVideoActive ? Color.green.opacity(0.25) : Color.blue.opacity(0.25))
+                .foregroundColor(playback.isExternalVideoActive ? .green : .blue)
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule().stroke((playback.isExternalVideoActive ? Color.green : Color.blue).opacity(0.4), lineWidth: 1)
+                )
+            }
+
+            // Aspect ratio menu
+            Menu {
+                ForEach(VideoAspectRatio.allCases, id: \.self) { ratio in
+                    Button(action: {
+                        playback.aspectRatio = ratio
+                        CarPlayVideoWindowController.shared.updateAspectRatio(ratio)
+                    }) {
+                        HStack {
+                            Text(ratio.rawValue)
+                            if playback.aspectRatio == ratio {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            } label: {
+                Image(systemName: "aspectratio")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.9))
+                    .frame(width: 36, height: 36)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle().stroke(Color.white.opacity(0.25), lineWidth: 1)
+                    )
+            }
+
+            // EPG Sheet Button for Live Stream
+            if playback.isLiveStream && playback.currentChannel != nil {
+                Button(action: {
+                    isShowingEPGSheet = true
+                }) {
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.9))
+                        .frame(width: 36, height: 36)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle().stroke(Color.white.opacity(0.25), lineWidth: 1)
+                        )
+                }
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(LinearGradient(colors: [.white.opacity(0.35), .white.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.4), radius: 14, x: 0, y: 6)
+    }
+
+    // MARK: - Center Status View
+    @ViewBuilder
+    private var centerStatusView: some View {
+        if playback.isBuffering {
+            VStack(spacing: 12) {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .scaleEffect(1.4)
+
+                Text("Bağlanıyor...")
+                    .font(.caption2.bold())
+                    .foregroundColor(.white.opacity(0.85))
+            }
+            .padding(20)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(LinearGradient(colors: [.white.opacity(0.35), .white.opacity(0.1)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.45), radius: 20, x: 0, y: 8)
+        } else if let error = playback.playbackError {
+            VStack(spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(.yellow)
+                    .font(.title)
+
+                Text(error)
+                    .font(.caption)
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 8)
+            }
+            .padding(16)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.yellow.opacity(0.4), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.5), radius: 16, x: 0, y: 6)
+        }
+    }
+
+    // MARK: - Bottom Floating Liquid Glass Dock
+    private var bottomFloatingDock: some View {
+        VStack(spacing: 14) {
+            // VOD Scrubber Slider
+            if !playback.isLiveStream && playback.duration > 0 {
+                VStack(spacing: 4) {
+                    Slider(
+                        value: Binding(
+                            get: { playback.currentTime },
+                            set: { playback.seek(to: $0) }
+                        ),
+                        in: 0...max(playback.duration, 1)
+                    )
+                    .accentColor(.accentColor)
+
+                    HStack {
+                        Text(formatTime(playback.currentTime))
+                            .font(.caption2.monospacedDigit())
+                            .foregroundColor(.white.opacity(0.8))
+                        Spacer()
+                        Text(formatTime(playback.duration))
+                            .font(.caption2.monospacedDigit())
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                }
+                .padding(.horizontal, 4)
+            }
+
+            // Playback Buttons Dock
+            HStack(spacing: 36) {
+                if playback.isLiveStream {
+                    // Previous Channel
+                    Button(action: {
+                        playback.playPreviousChannel()
+                        resetTimer()
+                    }) {
+                        Image(systemName: "backward.end.fill")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.95))
+                            .frame(width: 44, height: 44)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                            .overlay(
+                                Circle().stroke(Color.white.opacity(0.2), lineWidth: 1)
+                            )
+                    }
+                } else {
+                    // Skip Backward 10s
+                    Button(action: {
+                        playback.skipBackward(seconds: 10)
+                        resetTimer()
+                    }) {
+                        Image(systemName: "gobackward.10")
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.95))
+                            .frame(width: 44, height: 44)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                            .overlay(
+                                Circle().stroke(Color.white.opacity(0.2), lineWidth: 1)
+                            )
+                    }
+                }
+
+                // Play / Pause Main Orb
+                Button(action: {
+                    playback.togglePlayPause()
+                    resetTimer()
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(.ultraThinMaterial)
+                            .frame(width: 64, height: 64)
+                            .overlay(
+                                Circle()
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [.white.opacity(0.4), .white.opacity(0.1)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1.5
+                                    )
+                            )
+                            .shadow(color: Color.black.opacity(0.4), radius: 10, x: 0, y: 4)
+
+                        Image(systemName: playback.isPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: 26, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                }
+
+                if playback.isLiveStream {
+                    // Next Channel
+                    Button(action: {
+                        playback.playNextChannel()
+                        resetTimer()
+                    }) {
+                        Image(systemName: "forward.end.fill")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.95))
+                            .frame(width: 44, height: 44)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                            .overlay(
+                                Circle().stroke(Color.white.opacity(0.2), lineWidth: 1)
+                            )
+                    }
+                } else {
+                    // Skip Forward 10s
+                    Button(action: {
+                        playback.skipForward(seconds: 10)
+                        resetTimer()
+                    }) {
+                        Image(systemName: "goforward.10")
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.95))
+                            .frame(width: 44, height: 44)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                            .overlay(
+                                Circle().stroke(Color.white.opacity(0.2), lineWidth: 1)
+                            )
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22)
+                .stroke(LinearGradient(colors: [.white.opacity(0.35), .white.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.4), radius: 18, x: 0, y: 8)
     }
 
     private func formatTime(_ seconds: Double) -> String {
@@ -306,7 +408,7 @@ public struct VideoControlsOverlayView: View {
     }
 
     private func toggleControls() {
-        withAnimation {
+        withAnimation(.easeInOut(duration: 0.2)) {
             areControlsVisible.toggle()
         }
         if areControlsVisible {
@@ -316,11 +418,10 @@ public struct VideoControlsOverlayView: View {
 
     private func resetTimer() {
         hideTimer?.invalidate()
-        hideTimer = Timer.scheduledTimer(withTimeInterval: 4.0, repeats: false) { _ in
-            withAnimation {
+        hideTimer = Timer.scheduledTimer(withTimeInterval: 4.5, repeats: false) { _ in
+            withAnimation(.easeInOut(duration: 0.25)) {
                 areControlsVisible = false
             }
         }
     }
 }
-

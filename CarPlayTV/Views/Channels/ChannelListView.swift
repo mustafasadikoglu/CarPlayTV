@@ -162,11 +162,25 @@ public struct MiniPlayerBar: View {
 
     public var body: some View {
         HStack(spacing: 12) {
-            // Mini video preview
-            CustomVideoPlayerView()
-                .frame(width: 64, height: 40)
-                .cornerRadius(6)
-                .clipped()
+            // Mini logo / TV icon card
+            ZStack {
+                if let logo = channel.logoURL, !logo.isEmpty {
+                    CachedAsyncImage(url: logo, placeholder: "tv")
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 48, height: 34)
+                } else {
+                    Image(systemName: "tv.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(.white.opacity(0.85))
+                        .frame(width: 48, height: 34)
+                }
+            }
+            .background(Color.black.opacity(0.4))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(LinearGradient(colors: [.white.opacity(0.35), .white.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
+            )
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(channel.name)
@@ -181,7 +195,7 @@ public struct MiniPlayerBar: View {
 
                     if playback.isCarPlayConnected {
                         Text("• CarPlay")
-                            .font(.caption2)
+                            .font(.caption2.bold())
                             .foregroundColor(.blue)
                     }
                 }
@@ -193,14 +207,27 @@ public struct MiniPlayerBar: View {
                 playback.togglePlayPause()
             }) {
                 Image(systemName: playback.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.title3)
-                    .foregroundColor(.primary)
-                    .padding(8)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: 38, height: 38)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle().stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
             }
         }
-        .padding(.horizontal)
+        .padding(.horizontal, 14)
         .padding(.vertical, 8)
         .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(LinearGradient(colors: [.white.opacity(0.3), .white.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.3), radius: 10, x: 0, y: 4)
+        .padding(.horizontal, 12)
+        .padding(.bottom, 6)
         .onTapGesture {
             onTap()
         }
