@@ -46,6 +46,8 @@ public final class PlaybackManager: ObservableObject {
     /// Universal IPTV User-Agent matching popular IPTV players (avoids 403 Forbidden / AppleCoreMedia blocking)
     public static let defaultUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
 
+    private var pendingSeekTime: Double?
+    private var currentPlaybackToken: UUID = UUID()
     private var timeObserverToken: Any?
     private var statusObserver: NSKeyValueObservation?
     private var externalPlaybackObserver: NSKeyValueObservation?
@@ -135,11 +137,11 @@ public final class PlaybackManager: ObservableObject {
 
     // MARK: - Playback Control
     public func play(channel: Channel) {
-        // Fast Zapping: Cancel previous downloads and reset work item
         bufferExpansionWorkItem?.cancel()
         bufferExpansionWorkItem = nil
-        (player.currentItem?.asset as? AVURLAsset)?.cancelLoading()
-        player.replaceCurrentItem(with: nil)
+
+        let token = UUID()
+        self.currentPlaybackToken = token
 
         self.isLiveStream = true
         self.currentChannel = channel
@@ -148,6 +150,7 @@ public final class PlaybackManager: ObservableObject {
         self.duration = 0
         self.isBuffering = true
         self.playbackError = nil
+        self.pendingSeekTime = nil
 
         PlaylistStore.shared.recordRecent(channel: channel)
 
@@ -165,7 +168,7 @@ public final class PlaybackManager: ObservableObject {
         playerItem.automaticallyPreservesTimeOffsetFromLive = true
         playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = false
 
-        observePlayerItem(playerItem)
+        observePlayerItem(playerItem, token: token)
 
         player.replaceCurrentItem(with: playerItem)
         player.play()
@@ -182,11 +185,68 @@ public final class PlaybackManager: ObservableObject {
         updateNowPlayingInfo()
     }
 
+    /// Pre-resolves stream URL by following redirects (HTTP 302/301) with User-Agent and probes alternate containers (.m3u8 <-> .mp4)
+    public func resolvePlayableURL(for url: URL) async -> URL {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 4.0
+        let session = URLSession(configuration: config, delegate: InsecureSSLDelegate(), delegateQueue: nil)
+
+        // Probe helper: tests if URL responds with valid media status and returns final destination
+        func probe(_ testURL: URL) async -> URL? {
+            var req = URLRequest(url: testURL)
+            req.httpMethod = "GET"
+            req.setValue("bytes=0-1", forHTTPHeaderField: "Range")
+            req.setValue(Self.defaultUserAgent, forHTTPHeaderField: "User-Agent")
+            req.setValue("*/*", forHTTPHeaderField: "Accept")
+
+            if let (_, response) = try? await session.data(for: req),
+               let http = response as? HTTPURLResponse,
+               (200...299).contains(http.statusCode) || http.statusCode == 206 {
+                return http.url ?? testURL
+            }
+            return nil
+        }
+
+        // 1. Probe original URL
+        if let resolved = await probe(url) {
+            SanitizedLogger.info("Stream URL verified: \(URLSanitizer.sanitize(resolved))")
+            return resolved
+        }
+
+        // 2. If original failed, probe alternate container formats (.m3u8 <-> .mp4 <-> .ts)
+        let urlStr = url.absoluteString
+        var alternateURLs: [URL] = []
+
+        if urlStr.hasSuffix(".mp4") {
+            let base = String(urlStr.dropLast(4))
+            if let u = URL(string: base + ".m3u8") { alternateURLs.append(u) }
+            if let u = URL(string: base + ".ts") { alternateURLs.append(u) }
+        } else if urlStr.hasSuffix(".m3u8") {
+            let base = String(urlStr.dropLast(5))
+            if let u = URL(string: base + ".mp4") { alternateURLs.append(u) }
+        } else if urlStr.hasSuffix(".mkv") {
+            let base = String(urlStr.dropLast(4))
+            if let u = URL(string: base + ".mp4") { alternateURLs.append(u) }
+            if let u = URL(string: base + ".m3u8") { alternateURLs.append(u) }
+        }
+
+        for alt in alternateURLs {
+            if let resolved = await probe(alt) {
+                SanitizedLogger.info("Alternate stream URL resolved: \(URLSanitizer.sanitize(resolved))")
+                return resolved
+            }
+        }
+
+        // Return original URL as fallback for AVPlayer
+        return url
+    }
+
     public func playVOD(item: VODItem, startFromBeginning: Bool = false) {
         bufferExpansionWorkItem?.cancel()
         bufferExpansionWorkItem = nil
-        (player.currentItem?.asset as? AVURLAsset)?.cancelLoading()
-        player.replaceCurrentItem(with: nil)
+
+        let token = UUID()
+        self.currentPlaybackToken = token
 
         self.isLiveStream = false
         self.currentVODItem = item
@@ -194,49 +254,61 @@ public final class PlaybackManager: ObservableObject {
         self.currentTime = startFromBeginning ? 0 : item.lastPosition
         self.duration = item.duration
         self.isBuffering = true
-        let userAgent = Self.defaultUserAgent
-        let headers: [String: String] = [
-            "User-Agent": userAgent,
-            "Accept": "*/*"
-        ]
-        let asset = AVURLAsset(url: item.streamURL, options: ["AVURLAssetHTTPHeaderFieldsKey": headers])
-        let playerItem = AVPlayerItem(asset: asset)
-        playerItem.preferredForwardBufferDuration = 2.0
-        observePlayerItem(playerItem)
+        self.playbackError = nil
+        self.pendingSeekTime = (!startFromBeginning && item.lastPosition > 5) ? item.lastPosition : nil
 
-        player.replaceCurrentItem(with: playerItem)
+        Task { @MainActor [weak self] in
+            guard let self = self, self.currentPlaybackToken == token else { return }
 
-        if !startFromBeginning && item.lastPosition > 5 {
-            let targetTime = CMTime(seconds: item.lastPosition, preferredTimescale: 600)
-            player.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero)
+            // Pre-resolve stream URL (follows 302 redirects and auto-probes HLS .m3u8 fallback)
+            let resolvedURL = await self.resolvePlayableURL(for: item.streamURL)
+            guard self.currentPlaybackToken == token else { return }
+
+            let userAgent = Self.defaultUserAgent
+            let headers: [String: String] = [
+                "User-Agent": userAgent,
+                "Accept": "*/*"
+            ]
+            let asset = AVURLAsset(url: resolvedURL, options: ["AVURLAssetHTTPHeaderFieldsKey": headers])
+            let playerItem = AVPlayerItem(asset: asset)
+            playerItem.preferredForwardBufferDuration = 2.0
+            self.observePlayerItem(playerItem, token: token)
+
+            self.player.replaceCurrentItem(with: playerItem)
+            self.player.play()
+            self.isPlaying = true
+
+            self.updateNowPlayingInfo()
         }
-
-        player.play()
-        self.isPlaying = true
-
-        updateNowPlayingInfo()
     }
 
-    private func observePlayerItem(_ playerItem: AVPlayerItem) {
+    private func observePlayerItem(_ playerItem: AVPlayerItem, token: UUID) {
         statusObserver?.invalidate()
         statusObserver = playerItem.observe(\.status, options: [.new, .initial]) { [weak self] item, _ in
             DispatchQueue.main.async {
+                guard let self = self, self.currentPlaybackToken == token else { return }
                 switch item.status {
                 case .readyToPlay:
-                    self?.isBuffering = false
-                    self?.isPlaying = true
-                    if let dur = self?.player.currentItem?.duration {
+                    self.isBuffering = false
+                    self.isPlaying = true
+                    if let dur = self.player.currentItem?.duration {
                         let sec = CMTimeGetSeconds(dur)
                         if !sec.isNaN && !sec.isInfinite && sec > 0 {
-                            self?.duration = sec
+                            self.duration = sec
                         }
                     }
+                    // Apply pending seek safely now that item has prepared its tracks
+                    if let seekTime = self.pendingSeekTime, seekTime > 0 {
+                        self.pendingSeekTime = nil
+                        let target = CMTime(seconds: seekTime, preferredTimescale: 600)
+                        self.player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero)
+                    }
                 case .failed:
-                    self?.isBuffering = false
-                    self?.isPlaying = false
+                    self.isBuffering = false
+                    self.isPlaying = false
                     let msg = item.error?.localizedDescription ?? "Yayın oynatılamadı"
                     SanitizedLogger.error("Yayın başlatılamadı: \(msg), url: \(String(describing: (item.asset as? AVURLAsset)?.url))")
-                    self?.playbackError = msg
+                    self.playbackError = msg
                 default:
                     break
                 }
@@ -317,12 +389,21 @@ public final class PlaybackManager: ObservableObject {
         }
     }
 
-    @objc private func handleItemFailed() {
-        DispatchQueue.main.async {
-            self.playbackError = "Bağlantı kesildi, yeniden deneniyor..."
+    @objc private func handleItemFailed(_ notification: Notification) {
+        guard let failedItem = notification.object as? AVPlayerItem,
+              failedItem == player.currentItem else { return }
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             if let channel = self.currentChannel {
+                self.playbackError = "Bağlantı kesildi, yeniden deneniyor..."
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
                     self?.play(channel: channel)
+                }
+            } else if let vod = self.currentVODItem {
+                self.playbackError = "Bağlantı kesildi, yeniden deneniyor..."
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+                    self?.playVOD(item: vod, startFromBeginning: false)
                 }
             }
         }
