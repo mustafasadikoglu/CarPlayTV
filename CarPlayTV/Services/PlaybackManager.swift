@@ -214,21 +214,20 @@ public final class PlaybackManager: ObservableObject {
         updateNowPlayingInfo()
     }
 
-    /// Derives alternate container format URL (.mp4 <-> .m3u8)
+    /// Derives alternate container format URL (.mp4 <-> .mkv <-> .m3u8)
     public func alternateFormatURL(for url: URL) -> URL? {
         var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
         guard var path = components?.path, !path.isEmpty else { return nil }
 
         let lower = path.lowercased()
         if lower.hasSuffix(".mp4") {
-            // Alternate for MP4 is HLS M3U8
-            path = String(path.dropLast(4)) + ".m3u8"
-        } else if lower.hasSuffix(".m3u8") {
-            // Alternate for M3U8 is MP4
-            path = String(path.dropLast(5)) + ".mp4"
+            // Alternate for MP4 is MKV (standard IPTV alternate format)
+            path = String(path.dropLast(4)) + ".mkv"
         } else if lower.hasSuffix(".mkv") {
-            // MKV is unsupported by AVPlayer; convert to MP4
+            // Alternate for MKV is MP4
             path = String(path.dropLast(4)) + ".mp4"
+        } else if lower.hasSuffix(".m3u8") {
+            path = String(path.dropLast(5)) + ".mp4"
         } else if lower.hasSuffix(".ts") {
             path = String(path.dropLast(3)) + ".m3u8"
         } else {
@@ -243,7 +242,7 @@ public final class PlaybackManager: ObservableObject {
         let workItem = DispatchWorkItem { [weak self] in
             guard let self = self, self.currentPlaybackToken == token else { return }
             if self.isBuffering {
-                SanitizedLogger.warning("VOD buffering watchdog timed out after 6s")
+                SanitizedLogger.warning("VOD buffering watchdog timed out after 20s")
                 if let vod = self.currentVODItem, !self.hasRetriedWithAlternateFormat,
                    let altURL = self.alternateFormatURL(for: vod.streamURL) {
                     self.hasRetriedWithAlternateFormat = true
@@ -255,12 +254,13 @@ public final class PlaybackManager: ObservableObject {
                 } else {
                     self.isBuffering = false
                     self.isPlaying = false
-                    self.playbackError = "Yayın başlatılamadı. Sunucu bu akışa yanıt vermiyor."
+                    let err = self.player.currentItem?.error?.localizedDescription ?? self.player.error?.localizedDescription
+                    self.playbackError = err ?? "Yayın başlatılamadı. Sunucu bu akışa yanıt vermiyor."
                 }
             }
         }
         self.bufferingWatchdogWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 6.0, execute: workItem)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20.0, execute: workItem)
     }
 
     public func playVOD(item: VODItem, startFromBeginning: Bool = false, isRetry: Bool = false) {
@@ -300,8 +300,6 @@ public final class PlaybackManager: ObservableObject {
         ]
         let asset = AVURLAsset(url: item.streamURL, options: ["AVURLAssetHTTPHeaderFieldsKey": headers])
         let playerItem = AVPlayerItem(asset: asset)
-        playerItem.preferredForwardBufferDuration = 1.0
-        playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = false
         observePlayerItem(playerItem, token: token)
 
         player.replaceCurrentItem(with: playerItem)

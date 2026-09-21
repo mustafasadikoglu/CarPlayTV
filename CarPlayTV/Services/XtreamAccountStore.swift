@@ -47,25 +47,11 @@ public final class XtreamAccountStore: ObservableObject {
     private func sanitizeCachedContent(vod: inout [VODItem], series: inout [Series]) {
         vod.removeAll(where: { $0.streamURL.absoluteString.hasSuffix("/0.mp4") || $0.streamURL.absoluteString.hasSuffix("/0.") })
 
-        // Convert any cached .mkv or .avi movie streams to .mp4 for AVPlayer compatibility
-        for i in 0..<vod.count {
-            let urlStr = vod[i].streamURL.absoluteString
-            if urlStr.hasSuffix(".mkv") {
-                if let newURL = URL(string: String(urlStr.dropLast(4)) + ".mp4") {
-                    vod[i].streamURL = newURL
-                }
-            } else if urlStr.hasSuffix(".avi") {
-                if let newURL = URL(string: String(urlStr.dropLast(4)) + ".mp4") {
-                    vod[i].streamURL = newURL
-                }
-            }
-        }
-
         let hasStaleSeries = series.contains(where: { s in
             s.seasons.contains(where: { season in
                 season.episodes.contains(where: { ep in
                     let path = ep.streamURL.lastPathComponent
-                    return path.hasPrefix("0.") || path.hasPrefix("1.") || path.hasSuffix(".mkv") || path.hasSuffix(".avi")
+                    return path.hasPrefix("0.") || path.hasPrefix("1.")
                 })
             })
         })
