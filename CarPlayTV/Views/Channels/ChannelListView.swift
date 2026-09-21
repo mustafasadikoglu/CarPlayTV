@@ -162,19 +162,20 @@ public struct MiniPlayerBar: View {
 
     public var body: some View {
         HStack(spacing: 12) {
-            // Mini logo / TV icon card
             ZStack {
-                if let logo = channel.logoURL, !logo.isEmpty {
-                    CachedAsyncImage(url: logo, placeholder: "tv")
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 48, height: 34)
-                } else {
+                CachedAsyncImage(url: channel.logoURL, targetSize: CGSize(width: 72, height: 72)) { image in
+                    image
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 38, height: 26)
+                        .cornerRadius(4)
+                } placeholder: {
                     Image(systemName: "tv.fill")
-                        .font(.system(size: 18))
+                        .font(.system(size: 16))
                         .foregroundColor(.white.opacity(0.85))
-                        .frame(width: 48, height: 34)
                 }
             }
+            .frame(width: 48, height: 34)
             .background(Color.black.opacity(0.4))
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay(
