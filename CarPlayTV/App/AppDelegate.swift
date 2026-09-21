@@ -10,6 +10,7 @@ public class AppDelegate: UIResponder, UIApplicationDelegate {
         // Initialize singletons
         _ = PlaybackManager.shared
         _ = PlaylistStore.shared
+        _ = VODStore.shared
         _ = CarPlayVideoWindowController.shared
         return true
     }

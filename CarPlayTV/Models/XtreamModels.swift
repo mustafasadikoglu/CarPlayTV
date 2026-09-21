@@ -75,3 +75,56 @@ public struct XtreamLiveStream: Codable, Identifiable {
         case categoryId = "category_id"
     }
 }
+
+public struct XtreamVodStream: Codable, Identifiable {
+    public var id: Int { streamId }
+    public let streamId: Int
+    public let num: Int?
+    public let name: String
+    public let streamType: String?
+    public let streamIcon: String?
+    public let rating: String?
+    public let categoryId: String?
+    public let containerExtension: String?
+
+    enum CodingKeys: String, CodingKey {
+        case streamId = "stream_id"
+        case num
+        case name
+        case streamType = "stream_type"
+        case streamIcon = "stream_icon"
+        case rating
+        case categoryId = "category_id"
+        case containerExtension = "container_extension"
+    }
+}
+
+public struct XtreamSeriesItem: Codable, Identifiable {
+    public var id: Int { seriesId }
+    public let seriesId: Int
+    public let num: Int?
+    public let name: String
+    public let cover: String?
+    public let plot: String?
+    public let cast: String?
+    public let director: String?
+    public let genre: String?
+    public let releaseDate: String?
+    public let rating: String?
+    public let categoryId: String?
+
+    enum CodingKeys: String, CodingKey {
+        case seriesId = "series_id"
+        case num
+        case name
+        case cover
+        case plot
+        case cast
+        case director
+        case genre
+        case releaseDate = "releaseDate"
+        case rating
+        case categoryId = "category_id"
+    }
+}
+

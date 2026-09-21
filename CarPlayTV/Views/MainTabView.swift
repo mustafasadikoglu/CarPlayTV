@@ -13,17 +13,23 @@ public struct MainTabView: View {
                 }
                 .tag(0)
 
+            VODHomeView()
+                .tabItem {
+                    Label("Filmler & Diziler", systemImage: "film.stack.fill")
+                }
+                .tag(1)
+
             PlaylistManagerView()
                 .tabItem {
                     Label("Listeler", systemImage: "list.bullet.rectangle.fill")
                 }
-                .tag(1)
+                .tag(2)
 
             CarPlaySettingsView()
                 .tabItem {
                     Label("CarPlay", systemImage: "car.fill")
                 }
-                .tag(2)
+                .tag(3)
         }
         .accentColor(.red)
     }

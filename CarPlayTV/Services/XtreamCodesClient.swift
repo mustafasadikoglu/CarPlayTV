@@ -84,4 +84,110 @@ public final class XtreamCodesClient {
             )
         }
     }
+
+    // MARK: - VOD (Movies) Methods
+    public func fetchVodCategories(server: String, username: String, password: String) async throws -> [XtreamCategory] {
+        let cleanBase = cleanServerURL(server)
+        guard let url = URL(string: "\(cleanBase)/player_api.php?username=\(username)&password=\(password)&action=get_vod_categories") else {
+            throw URLError(.badURL)
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+
+        return try JSONDecoder().decode([XtreamCategory].self, from: data)
+    }
+
+    public func fetchVodStreams(server: String, username: String, password: String, categoryId: String? = nil) async throws -> [VODItem] {
+        let cleanBase = cleanServerURL(server)
+        var urlString = "\(cleanBase)/player_api.php?username=\(username)&password=\(password)&action=get_vod_streams"
+        if let catId = categoryId {
+            urlString += "&category_id=\(catId)"
+        }
+
+        guard let url = URL(string: urlString) else {
+            throw URLError(.badURL)
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+
+        let vodStreams = try JSONDecoder().decode([XtreamVodStream].self, from: data)
+
+        return vodStreams.compactMap { stream -> VODItem? in
+            let ext = stream.containerExtension ?? "mp4"
+            let streamUrlString = "\(cleanBase)/movie/\(username)/\(password)/\(stream.streamId).\(ext)"
+            guard let streamURL = URL(string: streamUrlString) else { return nil }
+
+            let poster = stream.streamIcon.flatMap { URL(string: $0) }
+            let ratingVal = stream.rating.flatMap { Double($0) }
+
+            return VODItem(
+                id: "vod_\(stream.streamId)",
+                title: stream.name,
+                streamURL: streamURL,
+                posterURL: poster,
+                backdropURL: poster,
+                rating: ratingVal,
+                categoryName: stream.categoryId ?? "Filmler",
+                type: .movie
+            )
+        }
+    }
+
+    // MARK: - Series Methods
+    public func fetchSeriesCategories(server: String, username: String, password: String) async throws -> [XtreamCategory] {
+        let cleanBase = cleanServerURL(server)
+        guard let url = URL(string: "\(cleanBase)/player_api.php?username=\(username)&password=\(password)&action=get_series_categories") else {
+            throw URLError(.badURL)
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+
+        return try JSONDecoder().decode([XtreamCategory].self, from: data)
+    }
+
+    public func fetchSeries(server: String, username: String, password: String, categoryId: String? = nil) async throws -> [Series] {
+        let cleanBase = cleanServerURL(server)
+        var urlString = "\(cleanBase)/player_api.php?username=\(username)&password=\(password)&action=get_series"
+        if let catId = categoryId {
+            urlString += "&category_id=\(catId)"
+        }
+
+        guard let url = URL(string: urlString) else {
+            throw URLError(.badURL)
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+
+        let seriesItems = try JSONDecoder().decode([XtreamSeriesItem].self, from: data)
+
+        return seriesItems.map { item in
+            let cover = item.cover.flatMap { URL(string: $0) }
+            let ratingVal = item.rating.flatMap { Double($0) }
+
+            return Series(
+                id: "series_\(item.seriesId)",
+                title: item.name,
+                coverURL: cover,
+                backdropURL: cover,
+                rating: ratingVal,
+                year: item.releaseDate,
+                genre: item.genre,
+                plot: item.plot,
+                categoryName: item.categoryId ?? "Diziler"
+            )
+        }
+    }
 }
+

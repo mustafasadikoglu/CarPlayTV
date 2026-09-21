@@ -12,10 +12,12 @@
 		1A2B3C4D5E6F639F589E0000 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F48A621300000 /* AppDelegate.swift */; };
 		1A2B3C4D5E6F2084B2020000 /* Channel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F1ED862700000 /* Channel.swift */; };
 		1A2B3C4D5E6F5D615C900000 /* XtreamModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F13993F5E0000 /* XtreamModels.swift */; };
+		1A2B3C4D5E6F14B5C7EC0000 /* VODModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F0EE078220000 /* VODModels.swift */; };
 		1A2B3C4D5E6F48F16ADF0000 /* M3UParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F4E1509AF0000 /* M3UParser.swift */; };
 		1A2B3C4D5E6F416402690000 /* XtreamCodesClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F4D53F7090000 /* XtreamCodesClient.swift */; };
 		1A2B3C4D5E6F1A2273FB0000 /* PlaybackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F4AF1DE130000 /* PlaybackManager.swift */; };
 		1A2B3C4D5E6F6351AAE20000 /* PlaylistStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F71CF28700000 /* PlaylistStore.swift */; };
+		1A2B3C4D5E6F32CE21130000 /* VODStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F1C63A09F0000 /* VODStore.swift */; };
 		1A2B3C4D5E6F1FE7BC940000 /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F5F4857A20000 /* CarPlaySceneDelegate.swift */; };
 		1A2B3C4D5E6F231419650000 /* CarPlayInterfaceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F2807C8CD0000 /* CarPlayInterfaceManager.swift */; };
 		1A2B3C4D5E6F34B7A5D60000 /* CarPlayVideoWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F359C07380000 /* CarPlayVideoWindowController.swift */; };
@@ -24,6 +26,9 @@
 		1A2B3C4D5E6F18B4D44C0000 /* FullscreenPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F2508B69A0000 /* FullscreenPlayerView.swift */; };
 		1A2B3C4D5E6F5C157DC00000 /* ChannelRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F509D48F20000 /* ChannelRowView.swift */; };
 		1A2B3C4D5E6F335902F40000 /* ChannelListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F49B2F3660000 /* ChannelListView.swift */; };
+		1A2B3C4D5E6F6677BF7F0000 /* VODCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F6E4226CD0000 /* VODCardView.swift */; };
+		1A2B3C4D5E6F277A2AC20000 /* VODDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F1753A10C0000 /* VODDetailView.swift */; };
+		1A2B3C4D5E6F7C7403900000 /* VODHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F74A99C420000 /* VODHomeView.swift */; };
 		1A2B3C4D5E6F5C701F520000 /* AddPlaylistSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F11543D200000 /* AddPlaylistSheet.swift */; };
 		1A2B3C4D5E6F69B090C80000 /* PlaylistManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F1477D6AA0000 /* PlaylistManagerView.swift */; };
 		1A2B3C4D5E6F63CB83C90000 /* CarPlaySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F1A5CE3A90000 /* CarPlaySettingsView.swift */; };
@@ -42,10 +47,12 @@
 		1A2B3C4D5E6F48A621300000 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "AppDelegate.swift"; path = "CarPlayTV/App/AppDelegate.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F1ED862700000 /* Channel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "Channel.swift"; path = "CarPlayTV/Models/Channel.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F13993F5E0000 /* XtreamModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "XtreamModels.swift"; path = "CarPlayTV/Models/XtreamModels.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F0EE078220000 /* VODModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "VODModels.swift"; path = "CarPlayTV/Models/VODModels.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F4E1509AF0000 /* M3UParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "M3UParser.swift"; path = "CarPlayTV/Services/M3UParser.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F4D53F7090000 /* XtreamCodesClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "XtreamCodesClient.swift"; path = "CarPlayTV/Services/XtreamCodesClient.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F4AF1DE130000 /* PlaybackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "PlaybackManager.swift"; path = "CarPlayTV/Services/PlaybackManager.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F71CF28700000 /* PlaylistStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "PlaylistStore.swift"; path = "CarPlayTV/Services/PlaylistStore.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F1C63A09F0000 /* VODStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "VODStore.swift"; path = "CarPlayTV/Services/VODStore.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F5F4857A20000 /* CarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CarPlaySceneDelegate.swift"; path = "CarPlayTV/CarPlay/CarPlaySceneDelegate.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F2807C8CD0000 /* CarPlayInterfaceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CarPlayInterfaceManager.swift"; path = "CarPlayTV/CarPlay/CarPlayInterfaceManager.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F359C07380000 /* CarPlayVideoWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CarPlayVideoWindowController.swift"; path = "CarPlayTV/CarPlay/CarPlayVideoWindowController.swift"; sourceTree = SOURCE_ROOT; };
@@ -54,6 +61,9 @@
 		1A2B3C4D5E6F2508B69A0000 /* FullscreenPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "FullscreenPlayerView.swift"; path = "CarPlayTV/Views/Player/FullscreenPlayerView.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F509D48F20000 /* ChannelRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ChannelRowView.swift"; path = "CarPlayTV/Views/Channels/ChannelRowView.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F49B2F3660000 /* ChannelListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ChannelListView.swift"; path = "CarPlayTV/Views/Channels/ChannelListView.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F6E4226CD0000 /* VODCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "VODCardView.swift"; path = "CarPlayTV/Views/VOD/VODCardView.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F1753A10C0000 /* VODDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "VODDetailView.swift"; path = "CarPlayTV/Views/VOD/VODDetailView.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F74A99C420000 /* VODHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "VODHomeView.swift"; path = "CarPlayTV/Views/VOD/VODHomeView.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F11543D200000 /* AddPlaylistSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "AddPlaylistSheet.swift"; path = "CarPlayTV/Views/Playlist/AddPlaylistSheet.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F1477D6AA0000 /* PlaylistManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "PlaylistManagerView.swift"; path = "CarPlayTV/Views/Playlist/PlaylistManagerView.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F1A5CE3A90000 /* CarPlaySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CarPlaySettingsView.swift"; path = "CarPlayTV/Views/Settings/CarPlaySettingsView.swift"; sourceTree = SOURCE_ROOT; };
@@ -118,10 +128,12 @@
 				1A2B3C4D5E6F48A621300000 /* AppDelegate.swift */,
 				1A2B3C4D5E6F1ED862700000 /* Channel.swift */,
 				1A2B3C4D5E6F13993F5E0000 /* XtreamModels.swift */,
+				1A2B3C4D5E6F0EE078220000 /* VODModels.swift */,
 				1A2B3C4D5E6F4E1509AF0000 /* M3UParser.swift */,
 				1A2B3C4D5E6F4D53F7090000 /* XtreamCodesClient.swift */,
 				1A2B3C4D5E6F4AF1DE130000 /* PlaybackManager.swift */,
 				1A2B3C4D5E6F71CF28700000 /* PlaylistStore.swift */,
+				1A2B3C4D5E6F1C63A09F0000 /* VODStore.swift */,
 				1A2B3C4D5E6F5F4857A20000 /* CarPlaySceneDelegate.swift */,
 				1A2B3C4D5E6F2807C8CD0000 /* CarPlayInterfaceManager.swift */,
 				1A2B3C4D5E6F359C07380000 /* CarPlayVideoWindowController.swift */,
@@ -130,6 +142,9 @@
 				1A2B3C4D5E6F2508B69A0000 /* FullscreenPlayerView.swift */,
 				1A2B3C4D5E6F509D48F20000 /* ChannelRowView.swift */,
 				1A2B3C4D5E6F49B2F3660000 /* ChannelListView.swift */,
+				1A2B3C4D5E6F6E4226CD0000 /* VODCardView.swift */,
+				1A2B3C4D5E6F1753A10C0000 /* VODDetailView.swift */,
+				1A2B3C4D5E6F74A99C420000 /* VODHomeView.swift */,
 				1A2B3C4D5E6F11543D200000 /* AddPlaylistSheet.swift */,
 				1A2B3C4D5E6F1477D6AA0000 /* PlaylistManagerView.swift */,
 				1A2B3C4D5E6F1A5CE3A90000 /* CarPlaySettingsView.swift */,
@@ -215,10 +230,12 @@
 				1A2B3C4D5E6F639F589E0000 /* AppDelegate.swift in Sources */,
 				1A2B3C4D5E6F2084B2020000 /* Channel.swift in Sources */,
 				1A2B3C4D5E6F5D615C900000 /* XtreamModels.swift in Sources */,
+				1A2B3C4D5E6F14B5C7EC0000 /* VODModels.swift in Sources */,
 				1A2B3C4D5E6F48F16ADF0000 /* M3UParser.swift in Sources */,
 				1A2B3C4D5E6F416402690000 /* XtreamCodesClient.swift in Sources */,
 				1A2B3C4D5E6F1A2273FB0000 /* PlaybackManager.swift in Sources */,
 				1A2B3C4D5E6F6351AAE20000 /* PlaylistStore.swift in Sources */,
+				1A2B3C4D5E6F32CE21130000 /* VODStore.swift in Sources */,
 				1A2B3C4D5E6F1FE7BC940000 /* CarPlaySceneDelegate.swift in Sources */,
 				1A2B3C4D5E6F231419650000 /* CarPlayInterfaceManager.swift in Sources */,
 				1A2B3C4D5E6F34B7A5D60000 /* CarPlayVideoWindowController.swift in Sources */,
@@ -227,6 +244,9 @@
 				1A2B3C4D5E6F18B4D44C0000 /* FullscreenPlayerView.swift in Sources */,
 				1A2B3C4D5E6F5C157DC00000 /* ChannelRowView.swift in Sources */,
 				1A2B3C4D5E6F335902F40000 /* ChannelListView.swift in Sources */,
+				1A2B3C4D5E6F6677BF7F0000 /* VODCardView.swift in Sources */,
+				1A2B3C4D5E6F277A2AC20000 /* VODDetailView.swift in Sources */,
+				1A2B3C4D5E6F7C7403900000 /* VODHomeView.swift in Sources */,
 				1A2B3C4D5E6F5C701F520000 /* AddPlaylistSheet.swift in Sources */,
 				1A2B3C4D5E6F69B090C80000 /* PlaylistManagerView.swift in Sources */,
 				1A2B3C4D5E6F63CB83C90000 /* CarPlaySettingsView.swift in Sources */,

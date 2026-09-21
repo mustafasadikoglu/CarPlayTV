@@ -11,6 +11,7 @@ public final class CarPlayInterfaceManager {
 
     private var favoritesTemplate: CPListTemplate?
     private var categoriesTemplate: CPListTemplate?
+    private var moviesTemplate: CPListTemplate?
     private var recentsTemplate: CPListTemplate?
 
     private init() {
@@ -47,6 +48,20 @@ public final class CarPlayInterfaceManager {
                 self?.refreshCategoriesTemplate()
             }
             .store(in: &cancellables)
+
+        VODStore.shared.$continueWatching
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.refreshMoviesTemplate()
+            }
+            .store(in: &cancellables)
+
+        VODStore.shared.$movies
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.refreshMoviesTemplate()
+            }
+            .store(in: &cancellables)
     }
 
     public func buildRootTemplate() {
@@ -60,14 +75,19 @@ public final class CarPlayInterfaceManager {
         let categories = makeCategoriesTemplate()
         self.categoriesTemplate = categories
 
-        // 3. Recents Tab
+        // 3. Movies / VOD Tab
+        let movies = makeMoviesTemplate()
+        self.moviesTemplate = movies
+
+        // 4. Recents Tab
         let recents = makeRecentsTemplate()
         self.recentsTemplate = recents
 
-        // 4. Tab Bar Template
-        let tabBar = CPTabBarTemplate(templates: [favorites, categories, recents])
+        // 5. Tab Bar Template
+        let tabBar = CPTabBarTemplate(templates: [favorites, categories, movies, recents])
         controller.setRootTemplate(tabBar, animated: true, completion: nil)
     }
+
 
     // MARK: - Templates Creation
     private func makeFavoritesTemplate() -> CPListTemplate {
@@ -111,6 +131,61 @@ public final class CarPlayInterfaceManager {
         template.emptyViewTitleVariants = ["Geçmiş Boş"]
         template.emptyViewSubtitleVariants = ["İzlediğiniz kanallar burada listelenir."]
         return template
+    }
+
+    private func makeMoviesTemplate() -> CPListTemplate {
+        var sections: [CPListSection] = []
+
+        // 1. Continue Watching Section (if available)
+        if !VODStore.shared.continueWatching.isEmpty {
+            let continueItems = VODStore.shared.continueWatching.prefix(5).map { vod in
+                makeMovieListItem(for: vod, isResume: true)
+            }
+            sections.append(CPListSection(items: Array(continueItems), header: "İzlemeye Devam Et", sectionIndexTitle: "D"))
+        }
+
+        // 2. Movies Section
+        let movieItems = VODStore.shared.movies.map { vod in
+            makeMovieListItem(for: vod, isResume: false)
+        }
+        sections.append(CPListSection(items: movieItems, header: "Tüm Filmler", sectionIndexTitle: "F"))
+
+        let template = CPListTemplate(title: "Filmler", sections: sections)
+        template.tabTitle = "Filmler"
+        template.tabImage = UIImage(systemName: "film.fill")
+        template.emptyViewTitleVariants = ["Film Bulunamadı"]
+        template.emptyViewSubtitleVariants = ["Telefondan film arşivi ekleyebilirsiniz."]
+        return template
+    }
+
+    private func makeMovieListItem(for item: VODItem, isResume: Bool) -> CPListItem {
+        let subtitle: String
+        if isResume && item.lastPosition > 0 {
+            subtitle = "Kaldığın Yerden: \(item.formattedDuration)"
+        } else {
+            subtitle = "\(item.categoryName) • \(item.formattedDuration)"
+        }
+
+        let listItem = CPListItem(text: item.title, detailText: subtitle)
+        listItem.setImage(UIImage(systemName: "film"))
+        listItem.handler = { [weak self] _, completion in
+            self?.playVODItem(item)
+            completion()
+        }
+        return listItem
+    }
+
+    private func playVODItem(_ item: VODItem) {
+        PlaybackManager.shared.playVOD(item: item, startFromBeginning: false)
+
+        if PlaybackManager.shared.carPlayVideoMode == .forceExternalWindow {
+            CarPlayVideoWindowController.shared.checkAndAttachExternalVideo()
+        }
+
+        if let controller = interfaceController {
+            let nowPlaying = CPNowPlayingTemplate.shared
+            controller.pushTemplate(nowPlaying, animated: true, completion: nil)
+        }
     }
 
     private func showCategoryChannels(category: String) {
@@ -158,6 +233,21 @@ public final class CarPlayInterfaceManager {
         recentsTemplate?.updateSections([CPListSection(items: items)])
     }
 
+    private func refreshMoviesTemplate() {
+        var sections: [CPListSection] = []
+        if !VODStore.shared.continueWatching.isEmpty {
+            let continueItems = VODStore.shared.continueWatching.prefix(5).map { vod in
+                makeMovieListItem(for: vod, isResume: true)
+            }
+            sections.append(CPListSection(items: Array(continueItems), header: "İzlemeye Devam Et", sectionIndexTitle: "D"))
+        }
+        let movieItems = VODStore.shared.movies.map { vod in
+            makeMovieListItem(for: vod, isResume: false)
+        }
+        sections.append(CPListSection(items: movieItems, header: "Tüm Filmler", sectionIndexTitle: "F"))
+        moviesTemplate?.updateSections(sections)
+    }
+
     private func refreshCategoriesTemplate() {
         let items = PlaylistStore.shared.categories.map { cat -> CPListItem in
             let item = CPListItem(text: cat.name, detailText: "\(cat.channelCount) Kanal")
@@ -171,3 +261,4 @@ public final class CarPlayInterfaceManager {
         categoriesTemplate?.updateSections([CPListSection(items: items)])
     }
 }
+

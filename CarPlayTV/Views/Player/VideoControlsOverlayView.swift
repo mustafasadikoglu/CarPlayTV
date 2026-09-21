@@ -34,28 +34,56 @@ public struct VideoControlsOverlayView: View {
                             }
                         }
 
-                        if let channel = playback.currentChannel {
-                            VStack(alignment: .leading, spacing: 2) {
-                                HStack(spacing: 6) {
-                                    Circle()
-                                        .fill(Color.red)
-                                        .frame(width: 8, height: 8)
-                                    Text("CANLI")
-                                        .font(.caption2.bold())
-                                        .foregroundColor(.red)
+                        if playback.isLiveStream {
+                            if let channel = playback.currentChannel {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    HStack(spacing: 6) {
+                                        Circle()
+                                            .fill(Color.red)
+                                            .frame(width: 8, height: 8)
+                                        Text("CANLI")
+                                            .font(.caption2.bold())
+                                            .foregroundColor(.red)
 
-                                    Text("•")
-                                        .foregroundColor(.white.opacity(0.4))
+                                        Text("•")
+                                            .foregroundColor(.white.opacity(0.4))
 
-                                    Text(channel.groupTitle)
-                                        .font(.caption)
-                                        .foregroundColor(.white.opacity(0.7))
+                                        Text(channel.groupTitle)
+                                            .font(.caption)
+                                            .foregroundColor(.white.opacity(0.7))
+                                    }
+
+                                    Text(channel.name)
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                        .lineLimit(1)
                                 }
+                            }
+                        } else {
+                            if let vod = playback.currentVODItem {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    HStack(spacing: 6) {
+                                        Text(vod.type == .movie ? "FİLM" : "DİZİ")
+                                            .font(.caption2.bold())
+                                            .foregroundColor(.accentColor)
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 2)
+                                            .background(Color.accentColor.opacity(0.25))
+                                            .cornerRadius(4)
 
-                                Text(channel.name)
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                    .lineLimit(1)
+                                        Text("•")
+                                            .foregroundColor(.white.opacity(0.4))
+
+                                        Text(vod.categoryName)
+                                            .font(.caption)
+                                            .foregroundColor(.white.opacity(0.7))
+                                    }
+
+                                    Text(vod.title)
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                        .lineLimit(1)
+                                }
                             }
                         }
 
@@ -136,42 +164,94 @@ public struct VideoControlsOverlayView: View {
 
                     Spacer()
 
-                    // Bottom Player Controls
-                    HStack(spacing: 40) {
-                        // Previous Channel
-                        Button(action: {
-                            playback.playPreviousChannel()
-                            resetTimer()
-                        }) {
-                            Image(systemName: "backward.end.fill")
-                                .font(.title2)
-                                .foregroundColor(.white)
+                    // Bottom Area (Scrubber for VOD + Controls)
+                    VStack(spacing: 12) {
+                        // VOD Scrubber Slider
+                        if !playback.isLiveStream && playback.duration > 0 {
+                            VStack(spacing: 4) {
+                                Slider(
+                                    value: Binding(
+                                        get: { playback.currentTime },
+                                        set: { playback.seek(to: $0) }
+                                    ),
+                                    in: 0...max(playback.duration, 1)
+                                )
+                                .accentColor(.accentColor)
+
+                                HStack {
+                                    Text(formatTime(playback.currentTime))
+                                        .font(.caption2.monospacedDigit())
+                                        .foregroundColor(.white.opacity(0.8))
+                                    Spacer()
+                                    Text(formatTime(playback.duration))
+                                        .font(.caption2.monospacedDigit())
+                                        .foregroundColor(.white.opacity(0.8))
+                                }
+                            }
+                            .padding(.horizontal, 24)
                         }
 
-                        // Play / Pause
-                        Button(action: {
-                            playback.togglePlayPause()
-                            resetTimer()
-                        }) {
-                            Image(systemName: playback.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                                .font(.system(size: 56))
-                                .foregroundColor(.white)
-                        }
+                        // Playback Buttons
+                        HStack(spacing: 40) {
+                            if playback.isLiveStream {
+                                // Previous Channel
+                                Button(action: {
+                                    playback.playPreviousChannel()
+                                    resetTimer()
+                                }) {
+                                    Image(systemName: "backward.end.fill")
+                                        .font(.title2)
+                                        .foregroundColor(.white)
+                                }
+                            } else {
+                                // Skip Backward 10s
+                                Button(action: {
+                                    playback.skipBackward(seconds: 10)
+                                    resetTimer()
+                                }) {
+                                    Image(systemName: "gobackward.10")
+                                        .font(.title)
+                                        .foregroundColor(.white)
+                                }
+                            }
 
-                        // Next Channel
-                        Button(action: {
-                            playback.playNextChannel()
-                            resetTimer()
-                        }) {
-                            Image(systemName: "forward.end.fill")
-                                .font(.title2)
-                                .foregroundColor(.white)
+                            // Play / Pause
+                            Button(action: {
+                                playback.togglePlayPause()
+                                resetTimer()
+                            }) {
+                                Image(systemName: playback.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                                    .font(.system(size: 56))
+                                    .foregroundColor(.white)
+                            }
+
+                            if playback.isLiveStream {
+                                // Next Channel
+                                Button(action: {
+                                    playback.playNextChannel()
+                                    resetTimer()
+                                }) {
+                                    Image(systemName: "forward.end.fill")
+                                        .font(.title2)
+                                        .foregroundColor(.white)
+                                }
+                            } else {
+                                // Skip Forward 10s
+                                Button(action: {
+                                    playback.skipForward(seconds: 10)
+                                    resetTimer()
+                                }) {
+                                    Image(systemName: "goforward.10")
+                                        .font(.title)
+                                        .foregroundColor(.white)
+                                }
+                            }
                         }
                     }
                     .padding(.bottom, 32)
                     .background(
                         LinearGradient(
-                            colors: [.clear, .black.opacity(0.8)],
+                            colors: [.clear, .black.opacity(0.85)],
                             startPoint: .top,
                             endPoint: .bottom
                         )
@@ -183,6 +263,17 @@ public struct VideoControlsOverlayView: View {
         .onAppear {
             resetTimer()
         }
+    }
+
+    private func formatTime(_ seconds: Double) -> String {
+        let total = Int(seconds)
+        let hours = total / 3600
+        let minutes = (total % 3600) / 60
+        let secs = total % 60
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, secs)
+        }
+        return String(format: "%02d:%02d", minutes, secs)
     }
 
     private func toggleControls() {
@@ -203,3 +294,4 @@ public struct VideoControlsOverlayView: View {
         }
     }
 }
+

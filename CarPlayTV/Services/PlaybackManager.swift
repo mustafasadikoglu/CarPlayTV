@@ -30,6 +30,10 @@ public final class PlaybackManager: ObservableObject {
 
     @Published public var player: AVPlayer
     @Published public var currentChannel: Channel?
+    @Published public var currentVODItem: VODItem?
+    @Published public var isLiveStream: Bool = true
+    @Published public var currentTime: Double = 0
+    @Published public var duration: Double = 0
     @Published public var isPlaying: Bool = false
     @Published public var isBuffering: Bool = false
     @Published public var aspectRatio: VideoAspectRatio = .fit
@@ -49,8 +53,10 @@ public final class PlaybackManager: ObservableObject {
         setupAudioSession()
         setupRemoteCommands()
         setupPlayerObservers()
+        setupTimeObserver()
         loadSavedSettings()
     }
+
 
     // MARK: - Audio Session
     private func setupAudioSession() {
@@ -92,9 +98,37 @@ public final class PlaybackManager: ObservableObject {
         )
     }
 
+    private func setupTimeObserver() {
+        let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        timeObserverToken = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+            guard let self = self, !self.isLiveStream else { return }
+
+            let currentSec = CMTimeGetSeconds(time)
+            if !currentSec.isNaN && !currentSec.isInfinite {
+                self.currentTime = currentSec
+            }
+
+            if let item = self.player.currentItem {
+                let durationSec = CMTimeGetSeconds(item.duration)
+                if !durationSec.isNaN && !durationSec.isInfinite && durationSec > 0 {
+                    self.duration = durationSec
+                }
+            }
+
+            // Periodically save progress to VODStore every 5 seconds
+            if let vod = self.currentVODItem, self.duration > 0, Int(self.currentTime) % 5 == 0 {
+                VODStore.shared.saveProgress(for: vod, position: self.currentTime, duration: self.duration)
+            }
+        }
+    }
+
     // MARK: - Playback Control
     public func play(channel: Channel) {
+        self.isLiveStream = true
         self.currentChannel = channel
+        self.currentVODItem = nil
+        self.currentTime = 0
+        self.duration = 0
         self.isBuffering = true
         self.playbackError = nil
 
@@ -113,7 +147,41 @@ public final class PlaybackManager: ObservableObject {
         playerItem.preferredForwardBufferDuration = 5.0 // Low latency for in-car live streams
         playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = false
 
-        // Observe player item status
+        observePlayerItem(playerItem)
+
+        player.replaceCurrentItem(with: playerItem)
+        player.play()
+        self.isPlaying = true
+
+        updateNowPlayingInfo()
+    }
+
+    public func playVOD(item: VODItem, startFromBeginning: Bool = false) {
+        self.isLiveStream = false
+        self.currentVODItem = item
+        self.currentChannel = nil
+        self.currentTime = startFromBeginning ? 0 : item.lastPosition
+        self.duration = item.duration
+        self.isBuffering = true
+        self.playbackError = nil
+
+        let playerItem = AVPlayerItem(url: item.streamURL)
+        observePlayerItem(playerItem)
+
+        player.replaceCurrentItem(with: playerItem)
+
+        if !startFromBeginning && item.lastPosition > 5 {
+            let targetTime = CMTime(seconds: item.lastPosition, preferredTimescale: 600)
+            player.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero)
+        }
+
+        player.play()
+        self.isPlaying = true
+
+        updateNowPlayingInfo()
+    }
+
+    private func observePlayerItem(_ playerItem: AVPlayerItem) {
         statusObserver?.invalidate()
         statusObserver = playerItem.observe(\.status, options: [.new, .initial]) { [weak self] item, _ in
             DispatchQueue.main.async {
@@ -121,21 +189,42 @@ public final class PlaybackManager: ObservableObject {
                 case .readyToPlay:
                     self?.isBuffering = false
                     self?.isPlaying = true
+                    if let dur = self?.player.currentItem?.duration {
+                        let sec = CMTimeGetSeconds(dur)
+                        if !sec.isNaN && !sec.isInfinite && sec > 0 {
+                            self?.duration = sec
+                        }
+                    }
                 case .failed:
                     self?.isBuffering = false
                     self?.isPlaying = false
-                    self?.playbackError = item.error?.localizedDescription ?? "Akış oynatılamadı"
+                    self?.playbackError = item.error?.localizedDescription ?? "Yayın oynatılamadı"
                 default:
                     break
                 }
             }
         }
+    }
 
-        player.replaceCurrentItem(with: playerItem)
-        player.play()
-        self.isPlaying = true
-
+    public func seek(to seconds: Double) {
+        guard !isLiveStream else { return }
+        let clamped = max(0, min(seconds, duration))
+        let target = CMTime(seconds: clamped, preferredTimescale: 600)
+        player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero)
+        self.currentTime = clamped
         updateNowPlayingInfo()
+
+        if let vod = currentVODItem {
+            VODStore.shared.saveProgress(for: vod, position: clamped, duration: duration)
+        }
+    }
+
+    public func skipForward(seconds: Double = 10) {
+        seek(to: currentTime + seconds)
+    }
+
+    public func skipBackward(seconds: Double = 10) {
+        seek(to: currentTime - seconds)
     }
 
     public func togglePlayPause() {
@@ -182,7 +271,6 @@ public final class PlaybackManager: ObservableObject {
     @objc private func handleItemStalled() {
         DispatchQueue.main.async {
             self.isBuffering = true
-            // Attempt auto-recovery
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
                 if self?.isPlaying == true {
                     self?.player.play()
@@ -204,33 +292,63 @@ public final class PlaybackManager: ObservableObject {
 
     // MARK: - Now Playing Info & Remote Command Center
     private func updateNowPlayingInfo() {
-        guard let channel = currentChannel else {
-            MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
-            return
-        }
+        if isLiveStream {
+            guard let channel = currentChannel else {
+                MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+                return
+            }
 
-        var nowPlayingInfo: [String: Any] = [
-            MPMediaItemPropertyTitle: channel.name,
-            MPMediaItemPropertyArtist: "CarPlayTV - \(channel.groupTitle)",
-            MPNowPlayingInfoPropertyIsLiveStream: true,
-            MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0
-        ]
+            var nowPlayingInfo: [String: Any] = [
+                MPMediaItemPropertyTitle: channel.name,
+                MPMediaItemPropertyArtist: "CarPlayTV - \(channel.groupTitle)",
+                MPNowPlayingInfoPropertyIsLiveStream: true,
+                MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0
+            ]
 
-        if let logoUrl = channel.logoURL {
-            // Load artwork asynchronously
-            URLSession.shared.dataTask(with: logoUrl) { data, _, _ in
-                if let data = data, let image = UIImage(data: data) {
-                    let artwork = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
-                    DispatchQueue.main.async {
-                        var currentInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? nowPlayingInfo
-                        currentInfo[MPMediaItemPropertyArtwork] = artwork
-                        MPNowPlayingInfoCenter.default().nowPlayingInfo = currentInfo
+            if let logoUrl = channel.logoURL {
+                URLSession.shared.dataTask(with: logoUrl) { data, _, _ in
+                    if let data = data, let image = UIImage(data: data) {
+                        let artwork = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+                        DispatchQueue.main.async {
+                            var currentInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? nowPlayingInfo
+                            currentInfo[MPMediaItemPropertyArtwork] = artwork
+                            MPNowPlayingInfoCenter.default().nowPlayingInfo = currentInfo
+                        }
                     }
-                }
-            }.resume()
-        }
+                }.resume()
+            }
 
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+        } else {
+            guard let vod = currentVODItem else {
+                MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+                return
+            }
+
+            var nowPlayingInfo: [String: Any] = [
+                MPMediaItemPropertyTitle: vod.title,
+                MPMediaItemPropertyArtist: "CarPlayTV - \(vod.categoryName)",
+                MPNowPlayingInfoPropertyIsLiveStream: false,
+                MPMediaItemPropertyPlaybackDuration: duration,
+                MPNowPlayingInfoPropertyElapsedPlaybackTime: currentTime,
+                MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0
+            ]
+
+            if let poster = vod.posterURL {
+                URLSession.shared.dataTask(with: poster) { data, _, _ in
+                    if let data = data, let image = UIImage(data: data) {
+                        let artwork = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+                        DispatchQueue.main.async {
+                            var currentInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? nowPlayingInfo
+                            currentInfo[MPMediaItemPropertyArtwork] = artwork
+                            MPNowPlayingInfoCenter.default().nowPlayingInfo = currentInfo
+                        }
+                    }
+                }.resume()
+            }
+
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+        }
     }
 
     private func setupRemoteCommands() {
@@ -265,7 +383,32 @@ public final class PlaybackManager: ObservableObject {
             self?.playPreviousChannel()
             return .success
         }
+
+        // VOD Skip Commands for CarPlay & Lock Screen
+        commandCenter.skipForwardCommand.isEnabled = true
+        commandCenter.skipForwardCommand.preferredIntervals = [10]
+        commandCenter.skipForwardCommand.addTarget { [weak self] _ in
+            self?.skipForward(seconds: 10)
+            return .success
+        }
+
+        commandCenter.skipBackwardCommand.isEnabled = true
+        commandCenter.skipBackwardCommand.preferredIntervals = [10]
+        commandCenter.skipBackwardCommand.addTarget { [weak self] _ in
+            self?.skipBackward(seconds: 10)
+            return .success
+        }
+
+        commandCenter.changePlaybackPositionCommand.isEnabled = true
+        commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
+            if let posEvent = event as? MPChangePlaybackPositionCommandEvent {
+                self?.seek(to: posEvent.positionTime)
+                return .success
+            }
+            return .commandFailed
+        }
     }
+
 
     public func setCarPlayVideoMode(_ mode: CarPlayVideoMode) {
         self.carPlayVideoMode = mode
