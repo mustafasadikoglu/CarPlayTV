@@ -53,6 +53,7 @@ public final class PlaybackManager: ObservableObject {
     private var likelyToKeepUpObserver: NSKeyValueObservation?
     private var bufferEmptyObserver: NSKeyValueObservation?
     private var externalPlaybackObserver: NSKeyValueObservation?
+    private var timeControlStatusObserver: NSKeyValueObservation?
     private var bufferExpansionWorkItem: DispatchWorkItem?
     private var bufferingWatchdogWorkItem: DispatchWorkItem?
     private var hasRetriedWithAlternateFormat: Bool = false
@@ -90,6 +91,26 @@ public final class PlaybackManager: ObservableObject {
         externalPlaybackObserver = player.observe(\.isExternalPlaybackActive, options: [.new]) { [weak self] player, _ in
             DispatchQueue.main.async {
                 self?.isExternalVideoActive = player.isExternalPlaybackActive
+            }
+        }
+
+        timeControlStatusObserver = player.observe(\.timeControlStatus, options: [.new, .initial]) { [weak self] player, _ in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                switch player.timeControlStatus {
+                case .playing:
+                    self.bufferingWatchdogWorkItem?.cancel()
+                    self.isBuffering = false
+                    self.isPlaying = true
+                case .paused:
+                    self.isPlaying = false
+                case .waitingToPlayAtSpecifiedRate:
+                    if self.playbackError == nil {
+                        self.isBuffering = true
+                    }
+                @unknown default:
+                    break
+                }
             }
         }
 
@@ -193,18 +214,23 @@ public final class PlaybackManager: ObservableObject {
         updateNowPlayingInfo()
     }
 
-    /// Derives alternate container format URL (.mp4 <-> .mkv <-> .m3u8)
+    /// Derives alternate container format URL (.mp4 <-> .m3u8)
     public func alternateFormatURL(for url: URL) -> URL? {
         var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
         guard var path = components?.path, !path.isEmpty else { return nil }
 
         let lower = path.lowercased()
         if lower.hasSuffix(".mp4") {
-            path = String(path.dropLast(4)) + ".mkv"
-        } else if lower.hasSuffix(".mkv") {
-            path = String(path.dropLast(4)) + ".mp4"
+            // Alternate for MP4 is HLS M3U8
+            path = String(path.dropLast(4)) + ".m3u8"
         } else if lower.hasSuffix(".m3u8") {
+            // Alternate for M3U8 is MP4
             path = String(path.dropLast(5)) + ".mp4"
+        } else if lower.hasSuffix(".mkv") {
+            // MKV is unsupported by AVPlayer; convert to MP4
+            path = String(path.dropLast(4)) + ".mp4"
+        } else if lower.hasSuffix(".ts") {
+            path = String(path.dropLast(3)) + ".m3u8"
         } else {
             return nil
         }
@@ -216,8 +242,8 @@ public final class PlaybackManager: ObservableObject {
         bufferingWatchdogWorkItem?.cancel()
         let workItem = DispatchWorkItem { [weak self] in
             guard let self = self, self.currentPlaybackToken == token else { return }
-            if self.isBuffering && !self.isPlaying {
-                SanitizedLogger.warning("VOD buffering watchdog timed out after 8s")
+            if self.isBuffering {
+                SanitizedLogger.warning("VOD buffering watchdog timed out after 6s")
                 if let vod = self.currentVODItem, !self.hasRetriedWithAlternateFormat,
                    let altURL = self.alternateFormatURL(for: vod.streamURL) {
                     self.hasRetriedWithAlternateFormat = true
@@ -225,18 +251,19 @@ public final class PlaybackManager: ObservableObject {
                     var fallback = vod
                     fallback.streamURL = altURL
                     self.currentVODItem = fallback
-                    self.playVOD(item: fallback, startFromBeginning: false)
+                    self.playVOD(item: fallback, startFromBeginning: false, isRetry: true)
                 } else {
                     self.isBuffering = false
-                    self.playbackError = "Yayın başlatılamadı. Sunucu akış yanıtı vermiyor."
+                    self.isPlaying = false
+                    self.playbackError = "Yayın başlatılamadı. Sunucu bu akışa yanıt vermiyor."
                 }
             }
         }
         self.bufferingWatchdogWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 8.0, execute: workItem)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6.0, execute: workItem)
     }
 
-    public func playVOD(item: VODItem, startFromBeginning: Bool = false) {
+    public func playVOD(item: VODItem, startFromBeginning: Bool = false, isRetry: Bool = false) {
         bufferExpansionWorkItem?.cancel()
         bufferExpansionWorkItem = nil
         bufferingWatchdogWorkItem?.cancel()
@@ -245,7 +272,9 @@ public final class PlaybackManager: ObservableObject {
         let token = UUID()
         self.currentPlaybackToken = token
 
-        self.hasRetriedWithAlternateFormat = false
+        if !isRetry {
+            self.hasRetriedWithAlternateFormat = false
+        }
         self.isLiveStream = false
         self.currentVODItem = item
         self.currentChannel = nil
@@ -271,7 +300,8 @@ public final class PlaybackManager: ObservableObject {
         ]
         let asset = AVURLAsset(url: item.streamURL, options: ["AVURLAssetHTTPHeaderFieldsKey": headers])
         let playerItem = AVPlayerItem(asset: asset)
-        playerItem.preferredForwardBufferDuration = 2.0
+        playerItem.preferredForwardBufferDuration = 1.0
+        playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = false
         observePlayerItem(playerItem, token: token)
 
         player.replaceCurrentItem(with: playerItem)
@@ -317,7 +347,7 @@ public final class PlaybackManager: ObservableObject {
                         var fallbackItem = vod
                         fallbackItem.streamURL = altURL
                         self.currentVODItem = fallbackItem
-                        self.playVOD(item: fallbackItem, startFromBeginning: false)
+                        self.playVOD(item: fallbackItem, startFromBeginning: false, isRetry: true)
                         return
                     }
 

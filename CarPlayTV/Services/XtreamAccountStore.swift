@@ -45,15 +45,28 @@ public final class XtreamAccountStore: ObservableObject {
     }
 
     private func sanitizeCachedContent(vod: inout [VODItem], series: inout [Series]) {
-        let hasBrokenVOD = vod.contains(where: { $0.streamURL.absoluteString.hasSuffix("/0.mp4") || $0.streamURL.absoluteString.hasSuffix("/0.") })
-        if hasBrokenVOD {
-            SanitizedLogger.info("XtreamAccountStore: Corrupted 0.mp4 streams found in cache. Cleaning VOD cache.")
-            vod.removeAll(where: { $0.streamURL.absoluteString.hasSuffix("/0.mp4") || $0.streamURL.absoluteString.hasSuffix("/0.") })
+        vod.removeAll(where: { $0.streamURL.absoluteString.hasSuffix("/0.mp4") || $0.streamURL.absoluteString.hasSuffix("/0.") })
+
+        // Convert any cached .mkv or .avi movie streams to .mp4 for AVPlayer compatibility
+        for i in 0..<vod.count {
+            let urlStr = vod[i].streamURL.absoluteString
+            if urlStr.hasSuffix(".mkv") {
+                if let newURL = URL(string: String(urlStr.dropLast(4)) + ".mp4") {
+                    vod[i].streamURL = newURL
+                }
+            } else if urlStr.hasSuffix(".avi") {
+                if let newURL = URL(string: String(urlStr.dropLast(4)) + ".mp4") {
+                    vod[i].streamURL = newURL
+                }
+            }
         }
 
         let hasStaleSeries = series.contains(where: { s in
             s.seasons.contains(where: { season in
-                season.episodes.contains(where: { $0.streamURL.absoluteString.contains("/series/") && ($0.streamURL.lastPathComponent.hasPrefix("0.") || $0.streamURL.lastPathComponent.hasPrefix("1.")) })
+                season.episodes.contains(where: { ep in
+                    let path = ep.streamURL.lastPathComponent
+                    return path.hasPrefix("0.") || path.hasPrefix("1.") || path.hasSuffix(".mkv") || path.hasSuffix(".avi")
+                })
             })
         })
         if hasStaleSeries {
