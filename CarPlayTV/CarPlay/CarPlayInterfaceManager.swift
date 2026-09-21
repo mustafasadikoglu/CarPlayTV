@@ -449,7 +449,7 @@ public final class CarPlayInterfaceManager {
             }
 
             let detailTemplate = CPListTemplate(title: series.title, sections: sections)
-            controller.pushTemplate(detailTemplate, animated: true)
+            try? await controller.pushTemplate(detailTemplate, animated: true)
         }
     }
 
