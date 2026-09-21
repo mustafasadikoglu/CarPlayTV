@@ -64,7 +64,7 @@ public final class XtreamAccountStore: ObservableObject {
 
             // 3. Create account model
             let isFirstAccount = accounts.isEmpty
-            var newAccount = XtreamAccount(
+            let newAccount = XtreamAccount(
                 name: name,
                 server: server,
                 username: user,
@@ -79,7 +79,7 @@ public final class XtreamAccountStore: ObservableObject {
             )
 
             // 4. Save password securely to Keychain
-            newAccount.securePassword = pass
+            KeychainHelper.shared.saveString(key: "xtream_acc_pass_\(newAccount.id)", value: pass)
 
             // 5. Cache channels & VOD to disk for this account
             saveAccountChannels(accountId: newAccount.id, channels: liveStreams)
