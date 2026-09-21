@@ -74,6 +74,9 @@ jobs:
             APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "CarPlayTV.app" -type d | head -n 1)
           fi
           echo "Found app at: $APP_PATH"
+          echo "=== VERIFYING & INJECTING ATS IN INFOPLIST ==="
+          plutil -replace NSAppTransportSecurity -xml "<dict><key>NSAllowsArbitraryLoads</key><true/></dict>" "$APP_PATH/Info.plist" || cp CarPlayTV/Info.plist "$APP_PATH/Info.plist"
+          plutil -p "$APP_PATH/Info.plist" | grep -A 4 "NSAppTransportSecurity" || true
           cp -r "$APP_PATH" build/Payload/
           cd build
           zip -r CarPlayTV.ipa Payload

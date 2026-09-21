@@ -75,13 +75,23 @@ public final class M3UParser {
         return allChannels
     }
 
+    private lazy var session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 45.0
+        config.timeoutIntervalForResource = 300.0
+        config.httpAdditionalHeaders = [
+            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+        ]
+        return URLSession(configuration: config, delegate: InsecureSSLDelegate(), delegateQueue: nil)
+    }()
+
     /// Memory-efficient streaming parser for large playlists (10,000+ channels)
     public func fetchAndParseStreaming(
         from url: URL,
         chunkSize: Int = 500,
         onChunk: @escaping ([Channel]) -> Void
     ) async throws -> Int {
-        let (localURL, response) = try await URLSession.shared.download(from: url)
+        let (localURL, response) = try await session.download(from: url)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             throw URLError(.badServerResponse)
         }

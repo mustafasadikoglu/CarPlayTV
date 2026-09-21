@@ -1,16 +1,34 @@
 import Foundation
 
+/// Delegate that allows self-signed, untrusted, or IP-based SSL certificates for IPTV providers
+final class InsecureSSLDelegate: NSObject, URLSessionDelegate, URLSessionTaskDelegate {
+    func urlSession(
+        _ session: URLSession,
+        didReceive challenge: URLAuthenticationChallenge,
+        completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+    ) {
+        if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+           let serverTrust = challenge.protectionSpace.serverTrust {
+            completionHandler(.useCredential, URLCredential(trust: serverTrust))
+        } else {
+            completionHandler(.performDefaultHandling, nil)
+        }
+    }
+}
+
 public final class XtreamCodesClient {
     public static let shared = XtreamCodesClient()
 
-    private let session: URLSession = {
+    private let sslDelegate = InsecureSSLDelegate()
+
+    private lazy var session: URLSession = {
         let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 25.0
-        config.timeoutIntervalForResource = 60.0
+        config.timeoutIntervalForRequest = 30.0
+        config.timeoutIntervalForResource = 90.0
         config.httpAdditionalHeaders = [
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
         ]
-        return URLSession(configuration: config)
+        return URLSession(configuration: config, delegate: sslDelegate, delegateQueue: nil)
     }()
 
     private init() {}
@@ -20,7 +38,18 @@ public final class XtreamCodesClient {
         if !clean.lowercased().hasPrefix("http://") && !clean.lowercased().hasPrefix("https://") {
             clean = "http://" + clean
         }
-        if clean.hasSuffix("/") {
+        while clean.hasSuffix("/") {
+            clean = String(clean.dropLast())
+        }
+        // Normalize if user accidentally pasted /player_api.php, /get.php, or /c
+        if clean.lowercased().hasSuffix("/player_api.php") {
+            clean = String(clean.dropLast("/player_api.php".count))
+        } else if clean.lowercased().hasSuffix("/get.php") {
+            clean = String(clean.dropLast("/get.php".count))
+        } else if clean.lowercased().hasSuffix("/c") {
+            clean = String(clean.dropLast("/c".count))
+        }
+        while clean.hasSuffix("/") {
             clean = String(clean.dropLast())
         }
         return clean

@@ -321,7 +321,7 @@ ${files.filter(f => f.isSource).map(f => `\t\t\t\t${f.buildRef} /* ${f.name} in 
 \t\t\t\tASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 \t\t\t\tCODE_SIGN_ENTITLEMENTS = CarPlayTV/CarPlayTV.entitlements;
 \t\t\t\tCODE_SIGN_STYLE = Automatic;
-\t\t\t\tCURRENT_PROJECT_VERSION = 3;
+\t\t\t\tCURRENT_PROJECT_VERSION = 4;
 \t\t\t\tDEVELOPMENT_TEAM = "";
 \t\t\t\tENABLE_PREVIEWS = YES;
 \t\t\t\tGENERATE_INFOPLIST_FILE = NO;
@@ -331,7 +331,7 @@ ${files.filter(f => f.isSource).map(f => `\t\t\t\t${f.buildRef} /* ${f.name} in 
 \t\t\t\t\t"$(inherited)",
 \t\t\t\t\t"@executable_path/Frameworks",
 \t\t\t\t);
-\t\t\t\tMARKETING_VERSION = 1.1.1;
+\t\t\t\tMARKETING_VERSION = 1.1.2;
 \t\t\t\tPRODUCT_BUNDLE_IDENTIFIER = com.carplaytv.app;
 \t\t\t\tPRODUCT_NAME = "$(TARGET_NAME)";
 \t\t\t\tSWIFT_EMIT_LOC_STRINGS = YES;
@@ -347,7 +347,7 @@ ${files.filter(f => f.isSource).map(f => `\t\t\t\t${f.buildRef} /* ${f.name} in 
 \t\t\t\tASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 \t\t\t\tCODE_SIGN_ENTITLEMENTS = CarPlayTV/CarPlayTV.entitlements;
 \t\t\t\tCODE_SIGN_STYLE = Automatic;
-\t\t\t\tCURRENT_PROJECT_VERSION = 3;
+\t\t\t\tCURRENT_PROJECT_VERSION = 4;
 \t\t\t\tDEVELOPMENT_TEAM = "";
 \t\t\t\tENABLE_PREVIEWS = YES;
 \t\t\t\tGENERATE_INFOPLIST_FILE = NO;
@@ -357,7 +357,7 @@ ${files.filter(f => f.isSource).map(f => `\t\t\t\t${f.buildRef} /* ${f.name} in 
 \t\t\t\t\t"$(inherited)",
 \t\t\t\t\t"@executable_path/Frameworks",
 \t\t\t\t);
-\t\t\t\tMARKETING_VERSION = 1.1.1;
+\t\t\t\tMARKETING_VERSION = 1.1.2;
 \t\t\t\tPRODUCT_BUNDLE_IDENTIFIER = com.carplaytv.app;
 \t\t\t\tPRODUCT_NAME = "$(TARGET_NAME)";
 \t\t\t\tSWIFT_EMIT_LOC_STRINGS = YES;
