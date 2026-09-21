@@ -13,6 +13,7 @@ public struct VODDetailView: View {
     public init(item: VODItem, series: Series? = nil, onPlay: @escaping (VODItem, Bool) -> Void) {
         self.item = item
         self.series = series
+        self.onPlay = onPlay
         self._currentSeries = State(initialValue: series)
         self._selectedSeason = State(initialValue: series?.seasons.first?.seasonNumber ?? 1)
     }
