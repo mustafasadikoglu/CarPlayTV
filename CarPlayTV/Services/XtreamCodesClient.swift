@@ -251,7 +251,7 @@ public final class XtreamCodesClient {
         return vodStreams.compactMap { stream -> VODItem? in
             guard stream.streamId > 0 else { return nil }
             var ext = stream.containerExtension?.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: ". \t\r\n")) ?? "mp4"
-            if ext.isEmpty { ext = "mp4" }
+            if ext == "mkv" || ext == "avi" || ext.isEmpty { ext = "m3u8" }
             let streamUrlString = "\(cleanBase)/movie/\(pathUser)/\(pathPass)/\(stream.streamId).\(ext)"
             guard let streamURL = URL(string: streamUrlString) else { return nil }
 
@@ -373,7 +373,7 @@ public final class XtreamCodesClient {
                 for ep in epList {
                     guard !ep.id.isEmpty && ep.id != "0" else { continue }
                     var ext = (ep.containerExtension ?? ep.info?.containerExtension)?.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: ". \t\r\n")) ?? "mp4"
-                    if ext.isEmpty { ext = "mp4" }
+                    if ext == "mkv" || ext == "avi" || ext.isEmpty { ext = "m3u8" }
                     let streamUrlString = "\(cleanBase)/series/\(pathUser)/\(pathPass)/\(ep.id).\(ext)"
                     guard let streamURL = URL(string: streamUrlString) else { continue }
 

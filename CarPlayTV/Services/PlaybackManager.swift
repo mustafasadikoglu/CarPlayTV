@@ -214,20 +214,21 @@ public final class PlaybackManager: ObservableObject {
         updateNowPlayingInfo()
     }
 
-    /// Derives alternate container format URL (.mp4 <-> .mkv <-> .m3u8)
+    /// Derives alternate container format URL (.mp4 <-> .m3u8)
     public func alternateFormatURL(for url: URL) -> URL? {
         var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
         guard var path = components?.path, !path.isEmpty else { return nil }
 
         let lower = path.lowercased()
         if lower.hasSuffix(".mp4") {
-            // Alternate for MP4 is MKV (standard IPTV alternate format)
-            path = String(path.dropLast(4)) + ".mkv"
-        } else if lower.hasSuffix(".mkv") {
-            // Alternate for MKV is MP4
-            path = String(path.dropLast(4)) + ".mp4"
+            // Alternate for MP4 is HLS M3U8
+            path = String(path.dropLast(4)) + ".m3u8"
         } else if lower.hasSuffix(".m3u8") {
+            // Alternate for M3U8 is MP4
             path = String(path.dropLast(5)) + ".mp4"
+        } else if lower.hasSuffix(".mkv") {
+            // MKV is unsupported by AVPlayer; convert to HLS M3U8
+            path = String(path.dropLast(4)) + ".m3u8"
         } else if lower.hasSuffix(".ts") {
             path = String(path.dropLast(3)) + ".m3u8"
         } else {
@@ -237,20 +238,19 @@ public final class PlaybackManager: ObservableObject {
         return components?.url
     }
 
-    private func startBufferingWatchdog(token: UUID) {
+    private func startBufferingWatchdog(token: UUID, retryCount: Int = 0) {
         bufferingWatchdogWorkItem?.cancel()
         let workItem = DispatchWorkItem { [weak self] in
             guard let self = self, self.currentPlaybackToken == token else { return }
             if self.isBuffering {
-                SanitizedLogger.warning("VOD buffering watchdog timed out after 20s")
-                if let vod = self.currentVODItem, !self.hasRetriedWithAlternateFormat,
+                SanitizedLogger.warning("VOD buffering watchdog timed out after 20s (retry \(retryCount))")
+                if let vod = self.currentVODItem, retryCount < 2,
                    let altURL = self.alternateFormatURL(for: vod.streamURL) {
-                    self.hasRetriedWithAlternateFormat = true
                     SanitizedLogger.info("Watchdog triggering fallback format: \(URLSanitizer.sanitize(altURL))")
                     var fallback = vod
                     fallback.streamURL = altURL
                     self.currentVODItem = fallback
-                    self.playVOD(item: fallback, startFromBeginning: false, isRetry: true)
+                    self.playVOD(item: fallback, startFromBeginning: false, retryCount: retryCount + 1)
                 } else {
                     self.isBuffering = false
                     self.isPlaying = false
@@ -263,7 +263,7 @@ public final class PlaybackManager: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 20.0, execute: workItem)
     }
 
-    public func playVOD(item: VODItem, startFromBeginning: Bool = false, isRetry: Bool = false) {
+    public func playVOD(item: VODItem, startFromBeginning: Bool = false, retryCount: Int = 0) {
         bufferExpansionWorkItem?.cancel()
         bufferExpansionWorkItem = nil
         bufferingWatchdogWorkItem?.cancel()
@@ -272,19 +272,26 @@ public final class PlaybackManager: ObservableObject {
         let token = UUID()
         self.currentPlaybackToken = token
 
-        if !isRetry {
-            self.hasRetriedWithAlternateFormat = false
-        }
         self.isLiveStream = false
-        self.currentVODItem = item
+
+        // Sanitize stream URL: Apple AVPlayer cannot play MKV/AVI containers; rewrite to HLS M3U8
+        var effectiveItem = item
+        let urlStr = effectiveItem.streamURL.absoluteString
+        if urlStr.hasSuffix(".mkv") || urlStr.hasSuffix(".avi") {
+            if let hlsURL = URL(string: String(urlStr.dropLast(4)) + ".m3u8") {
+                effectiveItem.streamURL = hlsURL
+            }
+        }
+
+        self.currentVODItem = effectiveItem
         self.currentChannel = nil
         self.currentTime = startFromBeginning ? 0 : item.lastPosition
         self.duration = item.duration
         self.playbackError = nil
         self.pendingSeekTime = (!startFromBeginning && item.lastPosition > 5) ? item.lastPosition : nil
 
-        guard item.isPlayable else {
-            SanitizedLogger.error("VOD stream URL is not playable: \(item.streamURL)")
+        guard effectiveItem.isPlayable else {
+            SanitizedLogger.error("VOD stream URL is not playable: \(effectiveItem.streamURL)")
             self.playbackError = "Geçersiz veya eksik video URL'si"
             self.isBuffering = false
             self.isPlaying = false
@@ -298,19 +305,19 @@ public final class PlaybackManager: ObservableObject {
             "User-Agent": userAgent,
             "Accept": "*/*"
         ]
-        let asset = AVURLAsset(url: item.streamURL, options: ["AVURLAssetHTTPHeaderFieldsKey": headers])
+        let asset = AVURLAsset(url: effectiveItem.streamURL, options: ["AVURLAssetHTTPHeaderFieldsKey": headers])
         let playerItem = AVPlayerItem(asset: asset)
-        observePlayerItem(playerItem, token: token)
+        observePlayerItem(playerItem, token: token, retryCount: retryCount)
 
         player.replaceCurrentItem(with: playerItem)
         player.play()
         self.isPlaying = true
 
-        startBufferingWatchdog(token: token)
+        startBufferingWatchdog(token: token, retryCount: retryCount)
         updateNowPlayingInfo()
     }
 
-    private func observePlayerItem(_ playerItem: AVPlayerItem, token: UUID) {
+    private func observePlayerItem(_ playerItem: AVPlayerItem, token: UUID, retryCount: Int = 0) {
         statusObserver?.invalidate()
         likelyToKeepUpObserver?.invalidate()
         bufferEmptyObserver?.invalidate()
@@ -337,15 +344,14 @@ public final class PlaybackManager: ObservableObject {
                     }
                 case .failed:
                     self.bufferingWatchdogWorkItem?.cancel()
-                    // If VOD playback fails, automatically attempt seamless retry with alternate container (.m3u8 <-> .mp4)
-                    if let vod = self.currentVODItem, !self.hasRetriedWithAlternateFormat,
+                    // If VOD playback fails, automatically attempt seamless retry with alternate container (.m3u8 <-> .mp4) up to 2 times
+                    if let vod = self.currentVODItem, retryCount < 2,
                        let altURL = self.alternateFormatURL(for: vod.streamURL) {
-                        self.hasRetriedWithAlternateFormat = true
-                        SanitizedLogger.warning("VOD format failed (\(item.error?.localizedDescription ?? "unknown")), retrying with alternate format: \(URLSanitizer.sanitize(altURL))")
+                        SanitizedLogger.warning("VOD format failed (\(item.error?.localizedDescription ?? "unknown")), retrying (attempt \(retryCount + 1)) with alternate format: \(URLSanitizer.sanitize(altURL))")
                         var fallbackItem = vod
                         fallbackItem.streamURL = altURL
                         self.currentVODItem = fallbackItem
-                        self.playVOD(item: fallbackItem, startFromBeginning: false, isRetry: true)
+                        self.playVOD(item: fallbackItem, startFromBeginning: false, retryCount: retryCount + 1)
                         return
                     }
 
