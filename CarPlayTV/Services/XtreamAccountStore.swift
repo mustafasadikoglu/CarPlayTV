@@ -47,28 +47,7 @@ public final class XtreamAccountStore: ObservableObject {
     private func sanitizeCachedContent(vod: inout [VODItem], series: inout [Series]) {
         vod.removeAll(where: { $0.streamURL.absoluteString.hasSuffix("/0.mp4") || $0.streamURL.absoluteString.hasSuffix("/0.") || $0.streamURL.absoluteString.hasSuffix("/0.m3u8") })
 
-        // Convert any cached .mkv or .avi movie streams to .m3u8 for AVPlayer compatibility
-        for i in 0..<vod.count {
-            let urlStr = vod[i].streamURL.absoluteString
-            if urlStr.hasSuffix(".mkv") || urlStr.hasSuffix(".avi") {
-                if let newURL = URL(string: String(urlStr.dropLast(4)) + ".m3u8") {
-                    vod[i].streamURL = newURL
-                }
-            }
-        }
-
-        for sIdx in 0..<series.count {
-            for seasonIdx in 0..<series[sIdx].seasons.count {
-                for epIdx in 0..<series[sIdx].seasons[seasonIdx].episodes.count {
-                    let urlStr = series[sIdx].seasons[seasonIdx].episodes[epIdx].streamURL.absoluteString
-                    if urlStr.hasSuffix(".mkv") || urlStr.hasSuffix(".avi") {
-                        if let newURL = URL(string: String(urlStr.dropLast(4)) + ".m3u8") {
-                            series[sIdx].seasons[seasonIdx].episodes[epIdx].streamURL = newURL
-                        }
-                    }
-                }
-            }
-        }
+        // MKV/AVI artık korunuyor; AVPlayer yerine MobileVLCKit ile oynatılır.
 
         let hasStaleSeries = series.contains(where: { s in
             s.seasons.contains(where: { season in

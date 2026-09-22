@@ -25,6 +25,7 @@
 		1A2B3C4D5E6F6E28E4C70000 /* ImageCacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F031F21C70000 /* ImageCacheManager.swift */; };
 		1A2B3C4D5E6F2510C1270000 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F19BD0AA70000 /* KeychainHelper.swift */; };
 		1A2B3C4D5E6F680ECF6F0000 /* URLSanitizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F6FD936BD0000 /* URLSanitizer.swift */; };
+		1A2B3C4D5E6F5B1949A90000 /* VLCPlaybackController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F71733A1B0000 /* VLCPlaybackController.swift */; };
 		1A2B3C4D5E6F7328BF0E0000 /* EPGParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F0A2F339C0000 /* EPGParser.swift */; };
 		1A2B3C4D5E6F2CF08E040000 /* EPGStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F224133AE0000 /* EPGStore.swift */; };
 		1A2B3C4D5E6F1FE7BC940000 /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F5F4857A20000 /* CarPlaySceneDelegate.swift */; };
@@ -33,6 +34,7 @@
 		1A2B3C4D5E6F2CC1A3D60000 /* CachedAsyncImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7FF122DC0000 /* CachedAsyncImage.swift */; };
 		1A2B3C4D5E6F4D88ED320000 /* LiquidGlassTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F05C44C1C0000 /* LiquidGlassTheme.swift */; };
 		1A2B3C4D5E6F43F466270000 /* CustomVideoPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F3A34014B0000 /* CustomVideoPlayerView.swift */; };
+		1A2B3C4D5E6F5E49EE790000 /* VLCVideoPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F132E0C470000 /* VLCVideoPlayerView.swift */; };
 		1A2B3C4D5E6F13F66D370000 /* VideoControlsOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F0BE79E170000 /* VideoControlsOverlayView.swift */; };
 		1A2B3C4D5E6F18B4D44C0000 /* FullscreenPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F2508B69A0000 /* FullscreenPlayerView.swift */; };
 		1A2B3C4D5E6F5C157DC00000 /* ChannelRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F509D48F20000 /* ChannelRowView.swift */; };
@@ -76,6 +78,7 @@
 		1A2B3C4D5E6F031F21C70000 /* ImageCacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ImageCacheManager.swift"; path = "CarPlayTV/Services/ImageCacheManager.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F19BD0AA70000 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "KeychainHelper.swift"; path = "CarPlayTV/Services/KeychainHelper.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F6FD936BD0000 /* URLSanitizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "URLSanitizer.swift"; path = "CarPlayTV/Services/URLSanitizer.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F71733A1B0000 /* VLCPlaybackController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "VLCPlaybackController.swift"; path = "CarPlayTV/Services/VLCPlaybackController.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F0A2F339C0000 /* EPGParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "EPGParser.swift"; path = "CarPlayTV/Services/EPGParser.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F224133AE0000 /* EPGStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "EPGStore.swift"; path = "CarPlayTV/Services/EPGStore.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F5F4857A20000 /* CarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CarPlaySceneDelegate.swift"; path = "CarPlayTV/CarPlay/CarPlaySceneDelegate.swift"; sourceTree = SOURCE_ROOT; };
@@ -84,6 +87,7 @@
 		1A2B3C4D5E6F7FF122DC0000 /* CachedAsyncImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CachedAsyncImage.swift"; path = "CarPlayTV/Views/Common/CachedAsyncImage.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F05C44C1C0000 /* LiquidGlassTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "LiquidGlassTheme.swift"; path = "CarPlayTV/Views/Common/LiquidGlassTheme.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F3A34014B0000 /* CustomVideoPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CustomVideoPlayerView.swift"; path = "CarPlayTV/Views/Player/CustomVideoPlayerView.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F132E0C470000 /* VLCVideoPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "VLCVideoPlayerView.swift"; path = "CarPlayTV/Views/Player/VLCVideoPlayerView.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F0BE79E170000 /* VideoControlsOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "VideoControlsOverlayView.swift"; path = "CarPlayTV/Views/Player/VideoControlsOverlayView.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F2508B69A0000 /* FullscreenPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "FullscreenPlayerView.swift"; path = "CarPlayTV/Views/Player/FullscreenPlayerView.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F509D48F20000 /* ChannelRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ChannelRowView.swift"; path = "CarPlayTV/Views/Channels/ChannelRowView.swift"; sourceTree = SOURCE_ROOT; };
@@ -177,6 +181,7 @@
 				1A2B3C4D5E6F031F21C70000 /* ImageCacheManager.swift */,
 				1A2B3C4D5E6F19BD0AA70000 /* KeychainHelper.swift */,
 				1A2B3C4D5E6F6FD936BD0000 /* URLSanitizer.swift */,
+				1A2B3C4D5E6F71733A1B0000 /* VLCPlaybackController.swift */,
 				1A2B3C4D5E6F0A2F339C0000 /* EPGParser.swift */,
 				1A2B3C4D5E6F224133AE0000 /* EPGStore.swift */,
 				1A2B3C4D5E6F5F4857A20000 /* CarPlaySceneDelegate.swift */,
@@ -185,6 +190,7 @@
 				1A2B3C4D5E6F7FF122DC0000 /* CachedAsyncImage.swift */,
 				1A2B3C4D5E6F05C44C1C0000 /* LiquidGlassTheme.swift */,
 				1A2B3C4D5E6F3A34014B0000 /* CustomVideoPlayerView.swift */,
+				1A2B3C4D5E6F132E0C470000 /* VLCVideoPlayerView.swift */,
 				1A2B3C4D5E6F0BE79E170000 /* VideoControlsOverlayView.swift */,
 				1A2B3C4D5E6F2508B69A0000 /* FullscreenPlayerView.swift */,
 				1A2B3C4D5E6F509D48F20000 /* ChannelRowView.swift */,
@@ -220,8 +226,11 @@
 			buildRules = (
 			);
 			dependencies = (
-			);
-			name = CarPlayTV;
+            );
+            packageProductDependencies = (
+                1A2B3C4D5E6F1B38B2EA0000 /* MobileVLCKit */,
+            );
+            name = CarPlayTV;
 			productName = CarPlayTV;
 			productReference = 1A2B3C4D5E6F58E3992F0000 /* CarPlayTV.app */;
 			productType = "com.apple.product-type.application";
@@ -293,6 +302,7 @@
 				1A2B3C4D5E6F6E28E4C70000 /* ImageCacheManager.swift in Sources */,
 				1A2B3C4D5E6F2510C1270000 /* KeychainHelper.swift in Sources */,
 				1A2B3C4D5E6F680ECF6F0000 /* URLSanitizer.swift in Sources */,
+				1A2B3C4D5E6F5B1949A90000 /* VLCPlaybackController.swift in Sources */,
 				1A2B3C4D5E6F7328BF0E0000 /* EPGParser.swift in Sources */,
 				1A2B3C4D5E6F2CF08E040000 /* EPGStore.swift in Sources */,
 				1A2B3C4D5E6F1FE7BC940000 /* CarPlaySceneDelegate.swift in Sources */,
@@ -301,6 +311,7 @@
 				1A2B3C4D5E6F2CC1A3D60000 /* CachedAsyncImage.swift in Sources */,
 				1A2B3C4D5E6F4D88ED320000 /* LiquidGlassTheme.swift in Sources */,
 				1A2B3C4D5E6F43F466270000 /* CustomVideoPlayerView.swift in Sources */,
+				1A2B3C4D5E6F5E49EE790000 /* VLCVideoPlayerView.swift in Sources */,
 				1A2B3C4D5E6F13F66D370000 /* VideoControlsOverlayView.swift in Sources */,
 				1A2B3C4D5E6F18B4D44C0000 /* FullscreenPlayerView.swift in Sources */,
 				1A2B3C4D5E6F5C157DC00000 /* ChannelRowView.swift in Sources */,
@@ -445,6 +456,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+/* Begin XCRemoteSwiftPackageReference section */
+        1A2B3C4D5E6F7FC557740000 /* XCRemoteSwiftPackageReference "VLCKit" */ = {
+            isa = XCRemoteSwiftPackageReference;
+            repositoryURL = "https://code.videolan.org/videolan/VLCKit.git";
+            requirement = {
+                kind = upToNextMajorVersion;
+                minimumVersion = 3.6.0;
+            };
+        };
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+        1A2B3C4D5E6F1B38B2EA0000 /* MobileVLCKit */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = 1A2B3C4D5E6F7FC557740000 /* XCRemoteSwiftPackageReference "VLCKit" */;
+            productName = MobileVLCKit;
+        };
+/* End XCSwiftPackageProductDependency section */
+
 
 	};
 	rootObject = 1A2B3C4D5E6F380169210000 /* Project object */;

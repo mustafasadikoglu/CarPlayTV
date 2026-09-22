@@ -43,6 +43,12 @@ public final class PlaybackManager: ObservableObject {
     @Published public var volume: Float = 1.0
     @Published public var playbackError: String?
 
+    /// MKV/AVI içerikler aktifken `true` olur; FullscreenPlayerView VLC görünümünü gösterir.
+    @Published public var isVLCPlayback: Bool = false
+
+    /// AVPlayer'ın oynatamadığı MKV/AVI içerikleri oynatan yardımcı oynatıcı.
+    public let vlc = VLCPlaybackController.shared
+
     /// Universal IPTV User-Agent matching popular IPTV players (avoids 403 Forbidden / AppleCoreMedia blocking)
     public static let defaultUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
 
@@ -59,6 +65,7 @@ public final class PlaybackManager: ObservableObject {
     private var bufferingWatchdogWorkItem: DispatchWorkItem?
     private var hasRetriedWithAlternateFormat: Bool = false
     private var cancellables = Set<AnyCancellable>()
+    private var vlcCancellables = Set<AnyCancellable>()
 
     private init() {
         self.player = AVPlayer()
@@ -66,6 +73,7 @@ public final class PlaybackManager: ObservableObject {
         setupRemoteCommands()
         setupPlayerObservers()
         setupTimeObserver()
+        setupVLCBindings()
         _ = NetworkMonitor.shared
         loadSavedSettings()
     }
@@ -98,6 +106,7 @@ public final class PlaybackManager: ObservableObject {
         timeControlStatusObserver = player.observe(\.timeControlStatus, options: [.new, .initial]) { [weak self] player, _ in
             DispatchQueue.main.async {
                 guard let self = self else { return }
+                guard !self.isVLCPlayback else { return }
                 switch player.timeControlStatus {
                 case .playing:
                     self.bufferingWatchdogWorkItem?.cancel()
@@ -165,6 +174,51 @@ public final class PlaybackManager: ObservableObject {
         }
     }
 
+    private func setupVLCBindings() {
+        vlc.$isPlaying
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] value in
+                guard let self = self, self.isVLCPlayback else { return }
+                self.isPlaying = value
+            }
+            .store(in: &vlcCancellables)
+
+        vlc.$currentTime
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] value in
+                guard let self = self, self.isVLCPlayback else { return }
+                self.currentTime = value
+                if let vod = self.currentVODItem, self.duration > 0, Int(value) % 5 == 0 {
+                    VODStore.shared.saveProgress(for: vod, position: value, duration: self.duration)
+                }
+            }
+            .store(in: &vlcCancellables)
+
+        vlc.$duration
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] value in
+                guard let self = self, self.isVLCPlayback else { return }
+                self.duration = value
+            }
+            .store(in: &vlcCancellables)
+
+        vlc.$isBuffering
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] value in
+                guard let self = self, self.isVLCPlayback else { return }
+                self.isBuffering = value
+            }
+            .store(in: &vlcCancellables)
+
+        vlc.$errorMessage
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] value in
+                guard let self = self, self.isVLCPlayback else { return }
+                self.playbackError = value
+            }
+            .store(in: &vlcCancellables)
+    }
+
     // MARK: - Playback Control
     public func play(channel: Channel) {
         bufferExpansionWorkItem?.cancel()
@@ -177,6 +231,8 @@ public final class PlaybackManager: ObservableObject {
         self.currentChannel = channel
         self.currentVODItem = nil
         self.currentVODOriginalItem = nil
+        self.isVLCPlayback = false
+        vlc.stop()
         self.currentTime = 0
         self.duration = 0
         self.isBuffering = true
@@ -266,10 +322,19 @@ public final class PlaybackManager: ObservableObject {
         bufferingWatchdogWorkItem?.cancel()
         bufferingWatchdogWorkItem = nil
 
+        // MKV/AVI, AVPlayer tarafından desteklenmez; MobileVLCKit ile oynat.
+        let ext = item.streamURL.pathExtension.lowercased()
+        if ext == "mkv" || ext == "avi" {
+            playVODWithVLC(item: item, startFromBeginning: startFromBeginning)
+            return
+        }
+
         let token = UUID()
         self.currentPlaybackToken = token
 
         self.isLiveStream = false
+        self.isVLCPlayback = false
+        vlc.stop()
         self.currentVODOriginalItem = item
 
         // AVPlayer cannot play MKV/AVI containers. Choose the most reliable container for the
@@ -309,6 +374,35 @@ public final class PlaybackManager: ObservableObject {
         self.isPlaying = true
 
         startBufferingWatchdog(token: token, retryCount: retryCount, candidateCount: candidates.count)
+        updateNowPlayingInfo()
+    }
+
+    /// MKV/AVI içerikleri MobileVLCKit üzerinden oynatır.
+    private func playVODWithVLC(item: VODItem, startFromBeginning: Bool) {
+        bufferExpansionWorkItem?.cancel()
+        bufferExpansionWorkItem = nil
+        bufferingWatchdogWorkItem?.cancel()
+        bufferingWatchdogWorkItem = nil
+
+        let token = UUID()
+        self.currentPlaybackToken = token
+
+        self.isLiveStream = false
+        self.isVLCPlayback = true
+        self.currentVODItem = item
+        self.currentChannel = nil
+        self.currentTime = startFromBeginning ? 0 : item.lastPosition
+        self.duration = item.duration
+        self.isBuffering = true
+        self.isPlaying = true
+        self.playbackError = nil
+        self.pendingSeekTime = nil
+
+        // AVPlayer'ı tamamen durdur, VLC devralır.
+        player.pause()
+        player.replaceCurrentItem(with: nil)
+
+        vlc.play(url: item.streamURL, startTime: startFromBeginning ? 0 : item.lastPosition)
         updateNowPlayingInfo()
     }
 
@@ -382,6 +476,17 @@ public final class PlaybackManager: ObservableObject {
 
     public func seek(to seconds: Double) {
         guard !isLiveStream else { return }
+
+        if isVLCPlayback {
+            vlc.seek(to: seconds)
+            self.currentTime = max(0, min(seconds, duration))
+            updateNowPlayingInfo()
+            if let vod = currentVODItem {
+                VODStore.shared.saveProgress(for: vod, position: self.currentTime, duration: duration)
+            }
+            return
+        }
+
         let clamped = max(0, min(seconds, duration))
         let target = CMTime(seconds: clamped, preferredTimescale: 600)
         player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero)
@@ -402,6 +507,12 @@ public final class PlaybackManager: ObservableObject {
     }
 
     public func togglePlayPause() {
+        if isVLCPlayback {
+            vlc.togglePlayPause()
+            updateNowPlayingInfo()
+            return
+        }
+
         if isPlaying {
             player.pause()
             isPlaying = false
@@ -413,12 +524,24 @@ public final class PlaybackManager: ObservableObject {
     }
 
     public func pause() {
+        if isVLCPlayback {
+            vlc.pause()
+            updateNowPlayingInfo()
+            return
+        }
+
         player.pause()
         isPlaying = false
         updateNowPlayingInfo()
     }
 
     public func resume() {
+        if isVLCPlayback {
+            vlc.resume()
+            updateNowPlayingInfo()
+            return
+        }
+
         player.play()
         isPlaying = true
         updateNowPlayingInfo()

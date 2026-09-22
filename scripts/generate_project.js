@@ -32,6 +32,7 @@ const files = [
     { name: "ImageCacheManager.swift", path: "CarPlayTV/Services/ImageCacheManager.swift", isSource: true },
     { name: "KeychainHelper.swift", path: "CarPlayTV/Services/KeychainHelper.swift", isSource: true },
     { name: "URLSanitizer.swift", path: "CarPlayTV/Services/URLSanitizer.swift", isSource: true },
+    { name: "VLCPlaybackController.swift", path: "CarPlayTV/Services/VLCPlaybackController.swift", isSource: true },
     { name: "EPGParser.swift", path: "CarPlayTV/Services/EPGParser.swift", isSource: true },
     { name: "EPGStore.swift", path: "CarPlayTV/Services/EPGStore.swift", isSource: true },
     { name: "CarPlaySceneDelegate.swift", path: "CarPlayTV/CarPlay/CarPlaySceneDelegate.swift", isSource: true },
@@ -40,6 +41,7 @@ const files = [
     { name: "CachedAsyncImage.swift", path: "CarPlayTV/Views/Common/CachedAsyncImage.swift", isSource: true },
     { name: "LiquidGlassTheme.swift", path: "CarPlayTV/Views/Common/LiquidGlassTheme.swift", isSource: true },
     { name: "CustomVideoPlayerView.swift", path: "CarPlayTV/Views/Player/CustomVideoPlayerView.swift", isSource: true },
+    { name: "VLCVideoPlayerView.swift", path: "CarPlayTV/Views/Player/VLCVideoPlayerView.swift", isSource: true },
     { name: "VideoControlsOverlayView.swift", path: "CarPlayTV/Views/Player/VideoControlsOverlayView.swift", isSource: true },
     { name: "FullscreenPlayerView.swift", path: "CarPlayTV/Views/Player/FullscreenPlayerView.swift", isSource: true },
     { name: "ChannelRowView.swift", path: "CarPlayTV/Views/Channels/ChannelRowView.swift", isSource: true },
@@ -100,6 +102,8 @@ const DEBUG_TARGET_CONF = generateUUID("dbg_target_conf");
 const RELEASE_TARGET_CONF = generateUUID("rel_target_conf");
 const DEBUG_PROJ_CONF = generateUUID("dbg_proj_conf");
 const RELEASE_PROJ_CONF = generateUUID("rel_proj_conf");
+const SPM_PACKAGE_REF = generateUUID("spm_vlckit_ref");
+const SPM_PRODUCT_DEP = generateUUID("spm_mobilevlckit_dep");
 
 let content = `// !$*UTF8*$!
 {
@@ -395,10 +399,45 @@ ${files.filter(f => f.isSource).map(f => `\t\t\t\t${f.buildRef} /* ${f.name} in 
 }
 `;
 
+// --- Swift Package Manager (MobileVLCKit) entegrasyonu ---
+const spmSections = `
+/* Begin XCRemoteSwiftPackageReference section */
+        ${SPM_PACKAGE_REF} /* XCRemoteSwiftPackageReference "VLCKit" */ = {
+            isa = XCRemoteSwiftPackageReference;
+            repositoryURL = "https://code.videolan.org/videolan/VLCKit.git";
+            requirement = {
+                kind = upToNextMajorVersion;
+                minimumVersion = 3.6.0;
+            };
+        };
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+        ${SPM_PRODUCT_DEP} /* MobileVLCKit */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = ${SPM_PACKAGE_REF} /* XCRemoteSwiftPackageReference "VLCKit" */;
+            productName = MobileVLCKit;
+        };
+/* End XCSwiftPackageProductDependency section */
+`;
+
+const targetWithSPM = `dependencies = (
+            );
+            packageProductDependencies = (
+                ${SPM_PRODUCT_DEP} /* MobileVLCKit */,
+            );
+            name = CarPlayTV;`;
+
 const projectDir = path.join(__dirname, '..', 'CarPlayTV.xcodeproj');
 if (!fs.existsSync(projectDir)) {
     fs.mkdirSync(projectDir, { recursive: true });
 }
 
-fs.writeFileSync(path.join(projectDir, 'project.pbxproj'), content, 'utf8');
+fs.writeFileSync(
+    path.join(projectDir, 'project.pbxproj'),
+    content
+        .replace('/* End XCConfigurationList section */', '/* End XCConfigurationList section */' + spmSections)
+        .replace(/dependencies = \(\s*\);\s*name = CarPlayTV;/, targetWithSPM),
+    'utf8'
+);
 console.log("Successfully generated CarPlayTV.xcodeproj/project.pbxproj");

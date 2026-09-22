@@ -10,8 +10,13 @@ public struct FullscreenPlayerView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            CustomVideoPlayerView()
-                .ignoresSafeArea()
+            if playback.isVLCPlayback {
+                VLCVideoPlayerView()
+                    .ignoresSafeArea()
+            } else {
+                CustomVideoPlayerView()
+                    .ignoresSafeArea()
+            }
 
             VideoControlsOverlayView(onClose: {
                 dismiss()
