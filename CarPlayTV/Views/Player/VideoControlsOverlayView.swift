@@ -26,8 +26,9 @@ public struct VideoControlsOverlayView: View {
                 VStack(spacing: 0) {
                     // Top Floating Liquid Glass Island
                     topFloatingBar
-                        .padding(.horizontal, 16)
-                        .padding(.top, 12)
+                        .padding(.leading, 72)
+                        .padding(.trailing, 16)
+                        .padding(.top, 16)
 
                     Spacer()
 
@@ -54,7 +55,7 @@ public struct VideoControlsOverlayView: View {
                     Spacer()
                 }
                 .padding(.leading, 16)
-                .padding(.top, 12)
+                .padding(.top, 16)
             }
         }
         .onAppear {
@@ -88,9 +89,6 @@ public struct VideoControlsOverlayView: View {
     // MARK: - Top Floating Glass Bar
     private var topFloatingBar: some View {
         HStack(spacing: 12) {
-            // Kalıcı kapatma butonu için yer ayır
-            Color.clear.frame(width: 44, height: 44)
-
             if playback.isLiveStream {
                 if let channel = playback.currentChannel {
                     VStack(alignment: .leading, spacing: 3) {

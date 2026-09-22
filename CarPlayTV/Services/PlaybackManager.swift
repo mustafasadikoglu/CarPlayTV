@@ -705,6 +705,35 @@ public final class PlaybackManager: ObservableObject {
         }
     }
 
+    /// Oynatmayı tamamen durdurur ve mevcut kanal/film durumunu temizler.
+    public func stopPlayback() {
+        bufferExpansionWorkItem?.cancel()
+        bufferExpansionWorkItem = nil
+        bufferingWatchdogWorkItem?.cancel()
+        bufferingWatchdogWorkItem = nil
+        currentPlaybackToken = UUID()
+
+        if isVLCPlayback {
+            vlc.stop()
+            isVLCPlayback = false
+        } else {
+            player.pause()
+            player.replaceCurrentItem(with: nil)
+        }
+
+        currentChannel = nil
+        currentVODItem = nil
+        currentVODOriginalItem = nil
+        isPlaying = false
+        isBuffering = false
+        hasStartedPlayback = false
+        playbackError = nil
+        pendingSeekTime = nil
+        playbackRate = 1.0
+
+        updateNowPlayingInfo()
+    }
+
     public func playNextChannel() {
         guard let current = currentChannel else { return }
         let channels = PlaylistStore.shared.channels

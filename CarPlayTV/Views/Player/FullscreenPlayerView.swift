@@ -19,6 +19,7 @@ public struct FullscreenPlayerView: View {
             }
 
             VideoControlsOverlayView(onClose: {
+                playback.stopPlayback()
                 dismiss()
             })
         }
