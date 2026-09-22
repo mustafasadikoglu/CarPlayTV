@@ -34,7 +34,7 @@ final class PiPManager: NSObject, ObservableObject, AVPictureInPictureController
             playerLayer = layer
             hostView.layer.addSublayer(layer)
 
-            let controller = AVPictureInPictureController(playerLayer: layer)
+            guard let controller = AVPictureInPictureController(playerLayer: layer) else { return }
             controller.delegate = self
             pipController = controller
         }
