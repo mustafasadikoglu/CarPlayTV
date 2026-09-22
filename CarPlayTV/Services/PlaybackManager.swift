@@ -46,6 +46,11 @@ public final class PlaybackManager: ObservableObject {
 
     /// MKV/AVI içerikler aktifken `true` olur; FullscreenPlayerView VLC görünümünü gösterir.
     @Published public var isVLCPlayback: Bool = false
+    @Published public var playbackRate: Float = 1.0
+    @Published public var subtitleTracks: [String] = []
+    @Published public var audioTracks: [String] = []
+    @Published public var currentSubtitleIndex: Int = -1
+    @Published public var currentAudioIndex: Int = -1
 
     /// AVPlayer'ın oynatamadığı MKV/AVI içerikleri oynatan yardımcı oynatıcı.
     public let vlc = VLCPlaybackController.shared
@@ -222,6 +227,46 @@ public final class PlaybackManager: ObservableObject {
                 self.playbackError = value
             }
             .store(in: &vlcCancellables)
+
+        vlc.$playbackRate
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] value in
+                guard let self = self, self.isVLCPlayback else { return }
+                self.playbackRate = value
+            }
+            .store(in: &vlcCancellables)
+
+        vlc.$subtitleTracks
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] value in
+                guard let self = self, self.isVLCPlayback else { return }
+                self.subtitleTracks = value
+            }
+            .store(in: &vlcCancellables)
+
+        vlc.$audioTracks
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] value in
+                guard let self = self, self.isVLCPlayback else { return }
+                self.audioTracks = value
+            }
+            .store(in: &vlcCancellables)
+
+        vlc.$currentSubtitleIndex
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] value in
+                guard let self = self, self.isVLCPlayback else { return }
+                self.currentSubtitleIndex = value
+            }
+            .store(in: &vlcCancellables)
+
+        vlc.$currentAudioIndex
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] value in
+                guard let self = self, self.isVLCPlayback else { return }
+                self.currentAudioIndex = value
+            }
+            .store(in: &vlcCancellables)
     }
 
     // MARK: - Playback Control
@@ -242,6 +287,11 @@ public final class PlaybackManager: ObservableObject {
         self.duration = 0
         self.isBuffering = true
         self.hasStartedPlayback = false
+        self.playbackRate = 1.0
+        self.subtitleTracks = []
+        self.audioTracks = []
+        self.currentSubtitleIndex = -1
+        self.currentAudioIndex = -1
         self.playbackError = nil
         self.pendingSeekTime = nil
 
@@ -366,6 +416,11 @@ public final class PlaybackManager: ObservableObject {
 
         self.isBuffering = true
         self.hasStartedPlayback = false
+        self.playbackRate = 1.0
+        self.subtitleTracks = []
+        self.audioTracks = []
+        self.currentSubtitleIndex = -1
+        self.currentAudioIndex = -1
 
         let userAgent = Self.defaultUserAgent
         let headers: [String: String] = [
@@ -402,6 +457,7 @@ public final class PlaybackManager: ObservableObject {
         self.duration = item.duration
         self.isBuffering = true
         self.hasStartedPlayback = false
+        self.playbackRate = 1.0
         self.isPlaying = true
         self.playbackError = nil
         self.pendingSeekTime = nil
@@ -554,6 +610,33 @@ public final class PlaybackManager: ObservableObject {
         player.play()
         isPlaying = true
         updateNowPlayingInfo()
+    }
+
+    // MARK: - Playback Rate & Tracks
+    public func cyclePlaybackRate() {
+        let speeds: [Float] = [1.0, 1.25, 1.5, 2.0, 0.5]
+        let idx = speeds.firstIndex(of: playbackRate) ?? 0
+        setPlaybackRate(speeds[(idx + 1) % speeds.count])
+    }
+
+    public func setPlaybackRate(_ rate: Float) {
+        playbackRate = rate
+        if isVLCPlayback {
+            vlc.setRate(rate)
+        } else if !isLiveStream {
+            player.rate = rate
+        }
+        updateNowPlayingInfo()
+    }
+
+    public func cycleSubtitle() {
+        guard isVLCPlayback else { return }
+        vlc.cycleSubtitle()
+    }
+
+    public func cycleAudioTrack() {
+        guard isVLCPlayback else { return }
+        vlc.cycleAudioTrack()
     }
 
     public func playNextChannel() {

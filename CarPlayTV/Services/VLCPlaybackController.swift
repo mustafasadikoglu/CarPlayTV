@@ -12,6 +12,11 @@ public final class VLCPlaybackController: ObservableObject {
     @Published public var duration: Double = 0
     @Published public var isBuffering: Bool = false
     @Published public var errorMessage: String?
+    @Published public var playbackRate: Float = 1.0
+    @Published public var subtitleTracks: [String] = []
+    @Published public var audioTracks: [String] = []
+    @Published public var currentSubtitleIndex: Int = -1
+    @Published public var currentAudioIndex: Int = -1
 
     public let player: VLCMediaPlayer
 
@@ -30,6 +35,12 @@ public final class VLCPlaybackController: ObservableObject {
         duration = 0
         isBuffering = true
         errorMessage = nil
+        playbackRate = 1.0
+        player.rate = 1.0
+        subtitleTracks = []
+        audioTracks = []
+        currentSubtitleIndex = -1
+        currentAudioIndex = -1
 
         let media = VLCMedia(url: url)
         media.addOption(":network-caching=2000")
@@ -75,6 +86,39 @@ public final class VLCPlaybackController: ObservableObject {
         let clamped = max(0, min(seconds, total))
         player.position = Float(clamped / total)
         currentTime = clamped
+    }
+
+    public func setRate(_ rate: Float) {
+        player.rate = rate
+        playbackRate = rate
+    }
+
+    public func cycleSubtitle() {
+        let indexes = player.videoSubTitlesIndexes.compactMap { ($0 as? NSNumber)?.intValue }.map { Int($0) }
+        guard !indexes.isEmpty else { return }
+        let current = Int(player.currentVideoSubTitleIndex)
+        if let idx = indexes.firstIndex(of: current) {
+            if idx + 1 < indexes.count {
+                player.currentVideoSubTitleIndex = Int32(indexes[idx + 1])
+            } else {
+                player.currentVideoSubTitleIndex = -1
+            }
+        } else {
+            player.currentVideoSubTitleIndex = Int32(indexes[0])
+        }
+        refreshTracks()
+    }
+
+    public func cycleAudioTrack() {
+        let indexes = player.audioTrackIndexes.compactMap { ($0 as? NSNumber)?.intValue }.map { Int($0) }
+        guard !indexes.isEmpty else { return }
+        let current = Int(player.currentAudioTrackIndex)
+        if let idx = indexes.firstIndex(of: current) {
+            player.currentAudioTrackIndex = Int32(indexes[(idx + 1) % indexes.count])
+        } else {
+            player.currentAudioTrackIndex = Int32(indexes[0])
+        }
+        refreshTracks()
     }
 
     public func stop() {
@@ -123,5 +167,14 @@ public final class VLCPlaybackController: ObservableObject {
         default:
             break
         }
+
+        refreshTracks()
+    }
+
+    private func refreshTracks() {
+        subtitleTracks = player.videoSubTitlesNames.compactMap { $0 as? String }
+        audioTracks = player.audioTrackNames.compactMap { $0 as? String }
+        currentSubtitleIndex = Int(player.currentVideoSubTitleIndex)
+        currentAudioIndex = Int(player.currentAudioTrackIndex)
     }
 }

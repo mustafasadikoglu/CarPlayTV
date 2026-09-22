@@ -289,6 +289,61 @@ public struct VideoControlsOverlayView: View {
                 .padding(.horizontal, 4)
             }
 
+            // Oynatma hızı / altyazı / ses şeridi (VOD)
+            if !playback.isLiveStream {
+                HStack(spacing: 10) {
+                    Button(action: {
+                        playback.cyclePlaybackRate()
+                        resetTimer()
+                    }) {
+                        Text(rateLabel(playback.playbackRate))
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 14)
+                            .frame(height: 32)
+                            .background(Color.white.opacity(0.12))
+                            .clipShape(Capsule())
+                            .overlay(Capsule().stroke(Color.white.opacity(0.22), lineWidth: 1))
+                    }
+
+                    if !playback.subtitleTracks.isEmpty {
+                        Button(action: {
+                            playback.cycleSubtitle()
+                            resetTimer()
+                        }) {
+                            Image(systemName: playback.currentSubtitleIndex >= 0 ? "captions.bubble.fill" : "captions.bubble")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(playback.currentSubtitleIndex >= 0 ? Color.accentColor : .white.opacity(0.75))
+                                .frame(width: 44, height: 32)
+                                .background(Color.white.opacity(0.12))
+                                .clipShape(Capsule())
+                                .overlay(Capsule().stroke(Color.white.opacity(0.22), lineWidth: 1))
+                        }
+                    }
+
+                    if !playback.audioTracks.isEmpty {
+                        Button(action: {
+                            playback.cycleAudioTrack()
+                            resetTimer()
+                        }) {
+                            HStack(spacing: 5) {
+                                Image(systemName: "speaker.wave.2.fill")
+                                    .font(.system(size: 13, weight: .semibold))
+                                Text("\(playback.audioTracks.count)")
+                                    .font(.system(size: 12, weight: .bold))
+                            }
+                            .foregroundColor(.white.opacity(0.9))
+                            .padding(.horizontal, 12)
+                            .frame(height: 32)
+                            .background(Color.white.opacity(0.12))
+                            .clipShape(Capsule())
+                            .overlay(Capsule().stroke(Color.white.opacity(0.22), lineWidth: 1))
+                        }
+                    }
+                }
+                .padding(.horizontal, 4)
+            }
+
             // Playback Buttons Dock
             HStack(spacing: 42) {
                 if playback.isLiveStream {
@@ -421,6 +476,16 @@ public struct VideoControlsOverlayView: View {
             return String(format: "%d:%02d:%02d", hours, minutes, secs)
         }
         return String(format: "%02d:%02d", minutes, secs)
+    }
+
+    private func rateLabel(_ rate: Float) -> String {
+        switch rate {
+        case 1.25: return "1.25x"
+        case 1.5: return "1.5x"
+        case 2.0: return "2x"
+        case 0.5: return "0.5x"
+        default: return "1x"
+        }
     }
 
     private func toggleControls() {
