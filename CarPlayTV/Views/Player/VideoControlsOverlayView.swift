@@ -43,6 +43,19 @@ public struct VideoControlsOverlayView: View {
                 }
                 .transition(.opacity.combined(with: .scale(scale: 0.98)).animation(.easeInOut(duration: 0.22)))
             }
+
+            // Her zaman görünür kapatma butonu
+            if let onClose = onClose {
+                VStack {
+                    HStack {
+                        closeButton
+                        Spacer()
+                    }
+                    Spacer()
+                }
+                .padding(.leading, 16)
+                .padding(.top, 12)
+            }
         }
         .onAppear {
             resetTimer()
@@ -54,23 +67,29 @@ public struct VideoControlsOverlayView: View {
         }
     }
 
+    // MARK: - Persistent Close Button
+    private var closeButton: some View {
+        Button(action: {
+            onClose?()
+        }) {
+            Image(systemName: "xmark")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(.white.opacity(0.95))
+                .frame(width: 44, height: 44)
+                .background(.ultraThinMaterial)
+                .clipShape(Circle())
+                .overlay(
+                    Circle().stroke(Color.white.opacity(0.28), lineWidth: 1.2)
+                )
+                .shadow(color: Color.black.opacity(0.3), radius: 6, x: 0, y: 2)
+        }
+    }
+
     // MARK: - Top Floating Glass Bar
     private var topFloatingBar: some View {
         HStack(spacing: 12) {
-            if let onClose = onClose {
-                Button(action: onClose) {
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.white.opacity(0.95))
-                        .frame(width: 48, height: 48)
-                        .background(.ultraThinMaterial)
-                        .clipShape(Circle())
-                        .overlay(
-                            Circle().stroke(Color.white.opacity(0.28), lineWidth: 1.2)
-                        )
-                        .shadow(color: Color.black.opacity(0.3), radius: 6, x: 0, y: 2)
-                }
-            }
+            // Kalıcı kapatma butonu için yer ayır
+            Color.clear.frame(width: 44, height: 44)
 
             if playback.isLiveStream {
                 if let channel = playback.currentChannel {
