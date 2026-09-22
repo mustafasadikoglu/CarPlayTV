@@ -1,6 +1,6 @@
 import SwiftUI
 import UIKit
-import MobileVLCKit
+import VLCKit
 
 /// MobileVLCKit'in video çıktısını SwiftUI içinde gösteren sarmalayıcı görünüm.
 public struct VLCVideoPlayerView: UIViewRepresentable {

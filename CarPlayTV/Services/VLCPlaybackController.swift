@@ -1,5 +1,5 @@
 import Foundation
-import MobileVLCKit
+import VLCKit
 import Combine
 
 /// AVPlayer'ın oynatamadığı MKV/AVI içerikleri MobileVLCKit üzerinden oynatan denetleyici.

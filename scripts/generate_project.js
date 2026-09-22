@@ -406,17 +406,17 @@ const spmSections = `
             isa = XCRemoteSwiftPackageReference;
             repositoryURL = "https://code.videolan.org/videolan/VLCKit.git";
             requirement = {
-                kind = upToNextMajorVersion;
-                minimumVersion = 3.6.0;
+                kind = exactVersion;
+                version = 4.0.0-a24;
             };
         };
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-        ${SPM_PRODUCT_DEP} /* MobileVLCKit */ = {
+        ${SPM_PRODUCT_DEP} /* VLCKit */ = {
             isa = XCSwiftPackageProductDependency;
             package = ${SPM_PACKAGE_REF} /* XCRemoteSwiftPackageReference "VLCKit" */;
-            productName = MobileVLCKit;
+            productName = VLCKit;
         };
 /* End XCSwiftPackageProductDependency section */
 `;
@@ -424,7 +424,7 @@ const spmSections = `
 const targetWithSPM = `dependencies = (
             );
             packageProductDependencies = (
-                ${SPM_PRODUCT_DEP} /* MobileVLCKit */,
+                ${SPM_PRODUCT_DEP} /* VLCKit */,
             );
             name = CarPlayTV;`;
 
