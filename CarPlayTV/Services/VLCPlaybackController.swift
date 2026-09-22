@@ -1,5 +1,5 @@
 import Foundation
-import VLCKit
+import MobileVLCKit
 import Combine
 
 /// AVPlayer'ın oynatamadığı MKV/AVI içerikleri MobileVLCKit üzerinden oynatan denetleyici.
@@ -31,11 +31,7 @@ public final class VLCPlaybackController: ObservableObject {
         isBuffering = true
         errorMessage = nil
 
-        guard let media = VLCMedia(url: url) else {
-            isBuffering = false
-            errorMessage = "Geçersiz video adresi"
-            return
-        }
+        let media = VLCMedia(url: url)
         media.addOption(":network-caching=2000")
         media.addOption(":clock-synchronization=0")
         media.addOption(":avcodec-hw=any")
@@ -48,7 +44,7 @@ public final class VLCPlaybackController: ObservableObject {
                 guard let self = self else { return }
                 if self.duration > 1 {
                     let target = min(max(startTime / self.duration, 0), 0.99)
-                    self.player.position = target
+                    self.player.position = Float(target)
                 }
             }
         }
@@ -77,7 +73,7 @@ public final class VLCPlaybackController: ObservableObject {
     public func seek(to seconds: Double) {
         let total = duration > 0 ? duration : 1
         let clamped = max(0, min(seconds, total))
-        player.position = clamped / total
+        player.position = Float(clamped / total)
         currentTime = clamped
     }
 
@@ -115,13 +111,15 @@ public final class VLCPlaybackController: ObservableObject {
         }
 
         switch p.state {
-        case .opening:
+        case .buffering, .opening:
             isBuffering = true
         case .playing:
             isBuffering = false
         case .error:
             isBuffering = false
             errorMessage = "Video oynatılamadı (VLC hatası)"
+        case .ended:
+            isBuffering = false
         default:
             break
         }

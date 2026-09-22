@@ -102,8 +102,6 @@ const DEBUG_TARGET_CONF = generateUUID("dbg_target_conf");
 const RELEASE_TARGET_CONF = generateUUID("rel_target_conf");
 const DEBUG_PROJ_CONF = generateUUID("dbg_proj_conf");
 const RELEASE_PROJ_CONF = generateUUID("rel_proj_conf");
-const SPM_PACKAGE_REF = generateUUID("spm_vlckit_ref");
-const SPM_PRODUCT_DEP = generateUUID("spm_mobilevlckit_dep");
 
 let content = `// !$*UTF8*$!
 {
@@ -399,45 +397,10 @@ ${files.filter(f => f.isSource).map(f => `\t\t\t\t${f.buildRef} /* ${f.name} in 
 }
 `;
 
-// --- Swift Package Manager (MobileVLCKit) entegrasyonu ---
-const spmSections = `
-/* Begin XCRemoteSwiftPackageReference section */
-        ${SPM_PACKAGE_REF} /* XCRemoteSwiftPackageReference "VLCKit" */ = {
-            isa = XCRemoteSwiftPackageReference;
-            repositoryURL = "https://code.videolan.org/videolan/VLCKit.git";
-            requirement = {
-                kind = revision;
-                revision = 6cbc4e7b248aa51ec0906697abb30ecae47194b7;
-            };
-        };
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-        ${SPM_PRODUCT_DEP} /* VLCKit */ = {
-            isa = XCSwiftPackageProductDependency;
-            package = ${SPM_PACKAGE_REF} /* XCRemoteSwiftPackageReference "VLCKit" */;
-            productName = VLCKit;
-        };
-/* End XCSwiftPackageProductDependency section */
-`;
-
-const targetWithSPM = `dependencies = (
-            );
-            packageProductDependencies = (
-                ${SPM_PRODUCT_DEP} /* VLCKit */,
-            );
-            name = CarPlayTV;`;
-
 const projectDir = path.join(__dirname, '..', 'CarPlayTV.xcodeproj');
 if (!fs.existsSync(projectDir)) {
     fs.mkdirSync(projectDir, { recursive: true });
 }
 
-fs.writeFileSync(
-    path.join(projectDir, 'project.pbxproj'),
-    content
-        .replace('/* End XCConfigurationList section */', '/* End XCConfigurationList section */' + spmSections)
-        .replace(/dependencies = \(\s*\);\s*name = CarPlayTV;/, targetWithSPM),
-    'utf8'
-);
+fs.writeFileSync(path.join(projectDir, 'project.pbxproj'), content, 'utf8');
 console.log("Successfully generated CarPlayTV.xcodeproj/project.pbxproj");

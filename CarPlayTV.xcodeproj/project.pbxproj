@@ -226,11 +226,8 @@
 			buildRules = (
 			);
 			dependencies = (
-            );
-            packageProductDependencies = (
-                1A2B3C4D5E6F1B38B2EA0000 /* VLCKit */,
-            );
-            name = CarPlayTV;
+			);
+			name = CarPlayTV;
 			productName = CarPlayTV;
 			productReference = 1A2B3C4D5E6F58E3992F0000 /* CarPlayTV.app */;
 			productType = "com.apple.product-type.application";
@@ -456,25 +453,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-/* Begin XCRemoteSwiftPackageReference section */
-        1A2B3C4D5E6F7FC557740000 /* XCRemoteSwiftPackageReference "VLCKit" */ = {
-            isa = XCRemoteSwiftPackageReference;
-            repositoryURL = "https://code.videolan.org/videolan/VLCKit.git";
-            requirement = {
-                kind = revision;
-                revision = 6cbc4e7b248aa51ec0906697abb30ecae47194b7;
-            };
-        };
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-        1A2B3C4D5E6F1B38B2EA0000 /* VLCKit */ = {
-            isa = XCSwiftPackageProductDependency;
-            package = 1A2B3C4D5E6F7FC557740000 /* XCRemoteSwiftPackageReference "VLCKit" */;
-            productName = VLCKit;
-        };
-/* End XCSwiftPackageProductDependency section */
-
 
 	};
 	rootObject = 1A2B3C4D5E6F380169210000 /* Project object */;

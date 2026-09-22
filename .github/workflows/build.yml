@@ -37,10 +37,13 @@ jobs:
       - name: Regenerate Xcode Project
         run: node scripts/generate_project.js
 
+      - name: Install CocoaPods Dependencies
+        run: pod install
+
       - name: Build App with xcodebuild
         run: |
           set -o pipefail
-          xcodebuild -project CarPlayTV.xcodeproj \
+          xcodebuild -workspace CarPlayTV.xcworkspace \
             -scheme CarPlayTV \
             -configuration Release \
             -sdk iphoneos \
