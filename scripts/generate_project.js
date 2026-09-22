@@ -406,8 +406,8 @@ const spmSections = `
             isa = XCRemoteSwiftPackageReference;
             repositoryURL = "https://code.videolan.org/videolan/VLCKit.git";
             requirement = {
-                kind = exactVersion;
-                version = 4.0.0-a24;
+                kind = revision;
+                revision = 6cbc4e7b248aa51ec0906697abb30ecae47194b7;
             };
         };
 /* End XCRemoteSwiftPackageReference section */

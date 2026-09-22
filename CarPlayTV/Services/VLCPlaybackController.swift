@@ -18,7 +18,7 @@ public final class VLCPlaybackController: ObservableObject {
     private var pollTimer: Timer?
 
     private init() {
-        self.player = VLCMediaPlayer(library: VLCLibrary.sharedLibrary())
+        self.player = VLCMediaPlayer(options: [])
     }
 
     /// Verilen URL'i oynatmaya başlar. `startTime` saniye cinsinden kaldığı yerden devam içindir.
@@ -100,18 +100,15 @@ public final class VLCPlaybackController: ObservableObject {
         let p = player
 
         isPlaying = p.isPlaying
-
-        if let time = p.time {
-            currentTime = (time.value?.doubleValue ?? 0) / 1000.0
-        }
+        currentTime = (p.time.value?.doubleValue ?? 0) / 1000.0
 
         if let length = p.media?.length {
             let total = length.value?.doubleValue ?? 0
             if total > 0 {
                 duration = total / 1000.0
             }
-        } else if let time = p.time, let remaining = p.remainingTime {
-            let total = (time.value?.doubleValue ?? 0) + (remaining.value?.doubleValue ?? 0)
+        } else {
+            let total = (p.time.value?.doubleValue ?? 0) + (p.remainingTime?.value?.doubleValue ?? 0)
             if total > 0 {
                 duration = total / 1000.0
             }
