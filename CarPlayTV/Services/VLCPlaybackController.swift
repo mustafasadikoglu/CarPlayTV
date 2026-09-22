@@ -13,11 +13,13 @@ public final class VLCPlaybackController: ObservableObject {
     @Published public var isBuffering: Bool = false
     @Published public var errorMessage: String?
 
-    public let player = VLCMediaPlayer()
+    public let player: VLCMediaPlayer
 
     private var pollTimer: Timer?
 
-    private init() {}
+    private init() {
+        self.player = VLCMediaPlayer(library: VLCLibrary.sharedLibrary())
+    }
 
     /// Verilen URL'i oynatmaya başlar. `startTime` saniye cinsinden kaldığı yerden devam içindir.
     public func play(url: URL, startTime: Double = 0) {
@@ -29,7 +31,11 @@ public final class VLCPlaybackController: ObservableObject {
         isBuffering = true
         errorMessage = nil
 
-        let media = VLCMedia(url: url)
+        guard let media = VLCMedia(url: url) else {
+            isBuffering = false
+            errorMessage = "Geçersiz video adresi"
+            return
+        }
         media.addOption(":network-caching=2000")
         media.addOption(":clock-synchronization=0")
         media.addOption(":avcodec-hw=any")
@@ -42,7 +48,7 @@ public final class VLCPlaybackController: ObservableObject {
                 guard let self = self else { return }
                 if self.duration > 1 {
                     let target = min(max(startTime / self.duration, 0), 0.99)
-                    self.player.position = Float(target)
+                    self.player.position = target
                 }
             }
         }
@@ -71,7 +77,7 @@ public final class VLCPlaybackController: ObservableObject {
     public func seek(to seconds: Double) {
         let total = duration > 0 ? duration : 1
         let clamped = max(0, min(seconds, total))
-        player.position = Float(clamped / total)
+        player.position = clamped / total
         currentTime = clamped
     }
 
@@ -96,28 +102,29 @@ public final class VLCPlaybackController: ObservableObject {
         isPlaying = p.isPlaying
 
         if let time = p.time {
-            currentTime = time.value.doubleValue / 1000.0
+            currentTime = (time.value?.doubleValue ?? 0) / 1000.0
         }
 
-        if let length = p.media?.length, length.value.doubleValue > 0 {
-            duration = length.value.doubleValue / 1000.0
+        if let length = p.media?.length {
+            let total = length.value?.doubleValue ?? 0
+            if total > 0 {
+                duration = total / 1000.0
+            }
         } else if let time = p.time, let remaining = p.remainingTime {
-            let total = time.value.doubleValue + remaining.value.doubleValue
+            let total = (time.value?.doubleValue ?? 0) + (remaining.value?.doubleValue ?? 0)
             if total > 0 {
                 duration = total / 1000.0
             }
         }
 
         switch p.state {
-        case .buffering, .opening:
+        case .opening:
             isBuffering = true
         case .playing:
             isBuffering = false
         case .error:
             isBuffering = false
             errorMessage = "Video oynatılamadı (VLC hatası)"
-        case .ended:
-            isBuffering = false
         default:
             break
         }

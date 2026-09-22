@@ -16,8 +16,7 @@ public struct VLCVideoPlayerView: UIViewRepresentable {
     }
 
     public func updateUIView(_ uiView: UIView, context: Context) {
-        if controller.player.drawable !== uiView {
-            controller.player.drawable = uiView
-        }
+        // VLCKit 4.0'da drawable Any? türündedir; doğrudan ata.
+        controller.player.drawable = uiView
     }
 }
