@@ -108,29 +108,6 @@ public struct VODHomeView: View {
                         .padding(.horizontal, 16)
                         .padding(.top, 4)
 
-                        // Continue Watching Row (if any)
-                        if !store.continueWatching.isEmpty {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("İzlemeye Devam Et")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 16)
-
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: 14) {
-                                        ForEach(store.continueWatching) { item in
-                                            VODCardView(item: item) {
-                                                selectedSeriesForDetail = nil
-                                                selectedItemForDetail = item
-                                            }
-                                            .frame(width: 145)
-                                        }
-                                    }
-                                    .padding(.horizontal, 16)
-                                }
-                            }
-                        }
-
                         // Category Filter Pills (Large 44pt Touch Targets)
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 10) {
