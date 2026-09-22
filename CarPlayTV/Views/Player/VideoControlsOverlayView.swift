@@ -220,7 +220,7 @@ public struct VideoControlsOverlayView: View {
     // MARK: - Center Status View
     @ViewBuilder
     private var centerStatusView: some View {
-        if playback.isBuffering {
+        if playback.isBuffering && !playback.hasStartedPlayback {
             VStack(spacing: 12) {
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))

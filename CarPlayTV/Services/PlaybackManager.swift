@@ -36,6 +36,7 @@ public final class PlaybackManager: ObservableObject {
     @Published public var duration: Double = 0
     @Published public var isPlaying: Bool = false
     @Published public var isBuffering: Bool = false
+    @Published public var hasStartedPlayback: Bool = false
     @Published public var aspectRatio: VideoAspectRatio = .fit
     @Published public var isCarPlayConnected: Bool = false
     @Published public var isExternalVideoActive: Bool = false
@@ -112,6 +113,7 @@ public final class PlaybackManager: ObservableObject {
                     self.bufferingWatchdogWorkItem?.cancel()
                     self.isBuffering = false
                     self.isPlaying = true
+                    self.hasStartedPlayback = true
                 case .paused:
                     self.isPlaying = false
                 case .waitingToPlayAtSpecifiedRate:
@@ -188,6 +190,9 @@ public final class PlaybackManager: ObservableObject {
             .sink { [weak self] value in
                 guard let self = self, self.isVLCPlayback else { return }
                 self.currentTime = value
+                if value > 0 {
+                    self.hasStartedPlayback = true
+                }
                 if let vod = self.currentVODItem, self.duration > 0, Int(value) % 5 == 0 {
                     VODStore.shared.saveProgress(for: vod, position: value, duration: self.duration)
                 }
@@ -236,6 +241,7 @@ public final class PlaybackManager: ObservableObject {
         self.currentTime = 0
         self.duration = 0
         self.isBuffering = true
+        self.hasStartedPlayback = false
         self.playbackError = nil
         self.pendingSeekTime = nil
 
@@ -359,6 +365,7 @@ public final class PlaybackManager: ObservableObject {
         }
 
         self.isBuffering = true
+        self.hasStartedPlayback = false
 
         let userAgent = Self.defaultUserAgent
         let headers: [String: String] = [
@@ -394,6 +401,7 @@ public final class PlaybackManager: ObservableObject {
         self.currentTime = startFromBeginning ? 0 : item.lastPosition
         self.duration = item.duration
         self.isBuffering = true
+        self.hasStartedPlayback = false
         self.isPlaying = true
         self.playbackError = nil
         self.pendingSeekTime = nil
@@ -419,6 +427,7 @@ public final class PlaybackManager: ObservableObject {
                     self.bufferingWatchdogWorkItem?.cancel()
                     self.isBuffering = false
                     self.isPlaying = true
+                    self.hasStartedPlayback = true
                     if let dur = self.player.currentItem?.duration {
                         let sec = CMTimeGetSeconds(dur)
                         if !sec.isNaN && !sec.isInfinite && sec > 0 {
