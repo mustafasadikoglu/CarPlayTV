@@ -37,6 +37,7 @@ public final class PlaybackManager: ObservableObject {
     @Published public var isPlaying: Bool = false
     @Published public var isBuffering: Bool = false
     @Published public var hasStartedPlayback: Bool = false
+    @Published public var isPictureInPictureActive: Bool = false
     @Published public var aspectRatio: VideoAspectRatio = .fit
     @Published public var isCarPlayConnected: Bool = false
     @Published public var isExternalVideoActive: Bool = false
@@ -80,6 +81,7 @@ public final class PlaybackManager: ObservableObject {
         setupPlayerObservers()
         setupTimeObserver()
         setupVLCBindings()
+        setupPiPBinding()
         _ = NetworkMonitor.shared
         loadSavedSettings()
     }
@@ -267,6 +269,15 @@ public final class PlaybackManager: ObservableObject {
                 self.currentAudioIndex = value
             }
             .store(in: &vlcCancellables)
+    }
+
+    private func setupPiPBinding() {
+        PiPManager.shared.$isActive
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] value in
+                self?.isPictureInPictureActive = value
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Playback Control
@@ -637,6 +648,61 @@ public final class PlaybackManager: ObservableObject {
     public func cycleAudioTrack() {
         guard isVLCPlayback else { return }
         vlc.cycleAudioTrack()
+    }
+
+    // MARK: - Picture in Picture, Retry, Next Episode & Volume
+    public var isPictureInPictureSupported: Bool {
+        PiPManager.shared.isSupported
+    }
+
+    public func startPictureInPicture() {
+        guard !isVLCPlayback else { return }
+        PiPManager.shared.start(player: player, gravity: aspectRatio.gravity)
+    }
+
+    public func retryPlayback() {
+        playbackError = nil
+        if let channel = currentChannel {
+            play(channel: channel)
+        } else if let vod = currentVODItem {
+            playVOD(item: vod, startFromBeginning: false)
+        }
+    }
+
+    public var hasNextEpisode: Bool {
+        guard let current = currentVODItem,
+              current.type == .seriesEpisode,
+              let seriesId = current.seriesId,
+              let series = VODStore.shared.series.first(where: { $0.id == seriesId }),
+              let season = series.seasons.first(where: { $0.seasonNumber == current.seasonNumber }) else {
+            return false
+        }
+        let episodes = season.episodes.sorted { ($0.episodeNumber ?? 0) < ($1.episodeNumber ?? 0) }
+        guard let idx = episodes.firstIndex(where: { $0.id == current.id }) else { return false }
+        return idx + 1 < episodes.count
+    }
+
+    public func playNextEpisode() {
+        guard let current = currentVODItem,
+              current.type == .seriesEpisode,
+              let seriesId = current.seriesId,
+              let series = VODStore.shared.series.first(where: { $0.id == seriesId }),
+              let season = series.seasons.first(where: { $0.seasonNumber == current.seasonNumber }) else {
+            return
+        }
+        let episodes = season.episodes.sorted { ($0.episodeNumber ?? 0) < ($1.episodeNumber ?? 0) }
+        guard let idx = episodes.firstIndex(where: { $0.id == current.id }), idx + 1 < episodes.count else { return }
+        playVOD(item: episodes[idx + 1], startFromBeginning: true)
+    }
+
+    public func setVolume(_ value: Float) {
+        let clamped = max(0, min(1, value))
+        volume = clamped
+        if isVLCPlayback {
+            vlc.setVolume(clamped)
+        } else {
+            player.volume = clamped
+        }
     }
 
     public func playNextChannel() {

@@ -33,6 +33,7 @@ const files = [
     { name: "KeychainHelper.swift", path: "CarPlayTV/Services/KeychainHelper.swift", isSource: true },
     { name: "URLSanitizer.swift", path: "CarPlayTV/Services/URLSanitizer.swift", isSource: true },
     { name: "VLCPlaybackController.swift", path: "CarPlayTV/Services/VLCPlaybackController.swift", isSource: true },
+    { name: "PiPManager.swift", path: "CarPlayTV/Services/PiPManager.swift", isSource: true },
     { name: "EPGParser.swift", path: "CarPlayTV/Services/EPGParser.swift", isSource: true },
     { name: "EPGStore.swift", path: "CarPlayTV/Services/EPGStore.swift", isSource: true },
     { name: "CarPlaySceneDelegate.swift", path: "CarPlayTV/CarPlay/CarPlaySceneDelegate.swift", isSource: true },

@@ -179,6 +179,24 @@ public struct VideoControlsOverlayView: View {
                 )
             }
 
+            // Picture in Picture
+            if !playback.isVLCPlayback && playback.isPictureInPictureSupported {
+                Button(action: {
+                    playback.startPictureInPicture()
+                }) {
+                    Image(systemName: "pip")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.95))
+                        .frame(width: 48, height: 48)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle().stroke(Color.white.opacity(0.28), lineWidth: 1.2)
+                        )
+                        .shadow(color: Color.black.opacity(0.3), radius: 6, x: 0, y: 2)
+                }
+            }
+
             // Aspect ratio menu
             Menu {
                 ForEach(VideoAspectRatio.allCases, id: \.self) { ratio in
@@ -258,7 +276,7 @@ public struct VideoControlsOverlayView: View {
             )
             .shadow(color: Color.black.opacity(0.45), radius: 20, x: 0, y: 8)
         } else if let error = playback.playbackError {
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundColor(.yellow)
                     .font(.title)
@@ -268,6 +286,18 @@ public struct VideoControlsOverlayView: View {
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 8)
+
+                Button(action: {
+                    playback.retryPlayback()
+                }) {
+                    Text("Yeniden Dene")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .frame(height: 40)
+                        .background(Color.accentColor)
+                        .clipShape(Capsule())
+                }
             }
             .padding(16)
             .background(.ultraThinMaterial)
@@ -283,6 +313,24 @@ public struct VideoControlsOverlayView: View {
     // MARK: - Bottom Floating Liquid Glass Dock
     private var bottomFloatingDock: some View {
         VStack(spacing: 14) {
+            // Ses seviyesi
+            HStack(spacing: 10) {
+                Image(systemName: playback.volume <= 0 ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.8))
+                    .frame(width: 22)
+
+                Slider(
+                    value: Binding(
+                        get: { Double(playback.volume) },
+                        set: { playback.setVolume(Float($0)) }
+                    ),
+                    in: 0...1
+                )
+                .accentColor(.accentColor)
+            }
+            .padding(.horizontal, 4)
+
             // VOD Scrubber Slider
             if !playback.isLiveStream && playback.duration > 0 {
                 VStack(spacing: 4) {
@@ -349,6 +397,26 @@ public struct VideoControlsOverlayView: View {
                                 Image(systemName: "speaker.wave.2.fill")
                                     .font(.system(size: 13, weight: .semibold))
                                 Text("\(playback.audioTracks.count)")
+                                    .font(.system(size: 12, weight: .bold))
+                            }
+                            .foregroundColor(.white.opacity(0.9))
+                            .padding(.horizontal, 12)
+                            .frame(height: 32)
+                            .background(Color.white.opacity(0.12))
+                            .clipShape(Capsule())
+                            .overlay(Capsule().stroke(Color.white.opacity(0.22), lineWidth: 1))
+                        }
+                    }
+
+                    if playback.hasNextEpisode {
+                        Button(action: {
+                            playback.playNextEpisode()
+                            resetTimer()
+                        }) {
+                            HStack(spacing: 5) {
+                                Image(systemName: "forward.end.fill")
+                                    .font(.system(size: 13, weight: .semibold))
+                                Text("Sonraki Bölüm")
                                     .font(.system(size: 12, weight: .bold))
                             }
                             .foregroundColor(.white.opacity(0.9))

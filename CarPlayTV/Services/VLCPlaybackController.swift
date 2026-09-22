@@ -93,6 +93,10 @@ public final class VLCPlaybackController: ObservableObject {
         playbackRate = rate
     }
 
+    public func setVolume(_ volume: Float) {
+        player.audio?.volume = Int32(volume * 100)
+    }
+
     public func cycleSubtitle() {
         let indexes = player.videoSubTitlesIndexes.compactMap { ($0 as? NSNumber)?.intValue }.map { Int($0) }
         guard !indexes.isEmpty else { return }

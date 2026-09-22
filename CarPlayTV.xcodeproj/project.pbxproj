@@ -26,6 +26,7 @@
 		1A2B3C4D5E6F2510C1270000 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F19BD0AA70000 /* KeychainHelper.swift */; };
 		1A2B3C4D5E6F680ECF6F0000 /* URLSanitizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F6FD936BD0000 /* URLSanitizer.swift */; };
 		1A2B3C4D5E6F5B1949A90000 /* VLCPlaybackController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F71733A1B0000 /* VLCPlaybackController.swift */; };
+		1A2B3C4D5E6F7887B6330000 /* PiPManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F2EBF99010000 /* PiPManager.swift */; };
 		1A2B3C4D5E6F7328BF0E0000 /* EPGParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F0A2F339C0000 /* EPGParser.swift */; };
 		1A2B3C4D5E6F2CF08E040000 /* EPGStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F224133AE0000 /* EPGStore.swift */; };
 		1A2B3C4D5E6F1FE7BC940000 /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F5F4857A20000 /* CarPlaySceneDelegate.swift */; };
@@ -79,6 +80,7 @@
 		1A2B3C4D5E6F19BD0AA70000 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "KeychainHelper.swift"; path = "CarPlayTV/Services/KeychainHelper.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F6FD936BD0000 /* URLSanitizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "URLSanitizer.swift"; path = "CarPlayTV/Services/URLSanitizer.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F71733A1B0000 /* VLCPlaybackController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "VLCPlaybackController.swift"; path = "CarPlayTV/Services/VLCPlaybackController.swift"; sourceTree = SOURCE_ROOT; };
+		1A2B3C4D5E6F2EBF99010000 /* PiPManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "PiPManager.swift"; path = "CarPlayTV/Services/PiPManager.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F0A2F339C0000 /* EPGParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "EPGParser.swift"; path = "CarPlayTV/Services/EPGParser.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F224133AE0000 /* EPGStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "EPGStore.swift"; path = "CarPlayTV/Services/EPGStore.swift"; sourceTree = SOURCE_ROOT; };
 		1A2B3C4D5E6F5F4857A20000 /* CarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CarPlaySceneDelegate.swift"; path = "CarPlayTV/CarPlay/CarPlaySceneDelegate.swift"; sourceTree = SOURCE_ROOT; };
@@ -182,6 +184,7 @@
 				1A2B3C4D5E6F19BD0AA70000 /* KeychainHelper.swift */,
 				1A2B3C4D5E6F6FD936BD0000 /* URLSanitizer.swift */,
 				1A2B3C4D5E6F71733A1B0000 /* VLCPlaybackController.swift */,
+				1A2B3C4D5E6F2EBF99010000 /* PiPManager.swift */,
 				1A2B3C4D5E6F0A2F339C0000 /* EPGParser.swift */,
 				1A2B3C4D5E6F224133AE0000 /* EPGStore.swift */,
 				1A2B3C4D5E6F5F4857A20000 /* CarPlaySceneDelegate.swift */,
@@ -300,6 +303,7 @@
 				1A2B3C4D5E6F2510C1270000 /* KeychainHelper.swift in Sources */,
 				1A2B3C4D5E6F680ECF6F0000 /* URLSanitizer.swift in Sources */,
 				1A2B3C4D5E6F5B1949A90000 /* VLCPlaybackController.swift in Sources */,
+				1A2B3C4D5E6F7887B6330000 /* PiPManager.swift in Sources */,
 				1A2B3C4D5E6F7328BF0E0000 /* EPGParser.swift in Sources */,
 				1A2B3C4D5E6F2CF08E040000 /* EPGStore.swift in Sources */,
 				1A2B3C4D5E6F1FE7BC940000 /* CarPlaySceneDelegate.swift in Sources */,
